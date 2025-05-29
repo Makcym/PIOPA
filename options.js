@@ -1,10 +1,11 @@
 // Load saved settings when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-  chrome.storage.sync.get(['username', 'password', 'applications', 'newsPeriod'], (result) => {
+  chrome.storage.sync.get(['username', 'password', 'applications', 'newsPeriod', 'autoUpdatePeriod'], (result) => {
     if (result.username) document.getElementById('username').value = result.username;
     if (result.password) document.getElementById('password').value = result.password;
     if (result.applications) document.getElementById('applications').value = result.applications;
     if (result.newsPeriod) document.getElementById('newsPeriod').value = result.newsPeriod;
+    if (result.autoUpdatePeriod) document.getElementById('autoUpdatePeriod').value = result.autoUpdatePeriod;
   });
 });
 
@@ -14,12 +15,14 @@ document.getElementById('save').addEventListener('click', () => {
   const password = document.getElementById('password').value;
   const applications = document.getElementById('applications').value;
   const newsPeriod = document.getElementById('newsPeriod').value;
+  const autoUpdatePeriod = document.getElementById('autoUpdatePeriod').value;
 
   chrome.storage.sync.set({
     username,
     password,
     applications,
-    newsPeriod
+    newsPeriod,
+    autoUpdatePeriod
   }, () => {
     const successMessage = document.getElementById('successMessage');
     successMessage.style.display = 'block';

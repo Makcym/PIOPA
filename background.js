@@ -1,8 +1,11 @@
 // Initialize extension
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener(async () => {
   console.log('PIO Application Checker extension installed');
   checkNews();
-  chrome.alarms.create('checkNews', { periodInMinutes: 60 * 5 });
+  const settings = await chrome.storage.sync.get(['autoUpdatePeriod']);
+  let period = parseFloat(settings.autoUpdatePeriod);
+  if (isNaN(period) || period <= 0) period = 3;
+  chrome.alarms.create('checkNews', { periodInMinutes: period * 60 });
 });
 
 // Listen for messages from content script
@@ -38,7 +41,7 @@ function getPeriodStart(period) {
 async function checkNews() {
   try {
     // Get saved settings
-    const settings = await chrome.storage.sync.get(['username', 'password', 'applications', 'newsPeriod']);
+    const settings = await chrome.storage.sync.get(['username', 'password', 'applications', 'newsPeriod', 'autoUpdatePeriod']);
     
     if (!settings.username || !settings.password || !settings.applications) {
       console.log('Settings not configured');
@@ -74,6 +77,25 @@ async function checkNews() {
     const applicationNumbers = settings.applications.split(',').map(app => app.trim());
     const appMap = await getApplicationsMap(token);
 
+    // Получить мета-данные заявок
+    const appMeta = {};
+    const allAppsResp = await fetch('https://api-przybysz.duw.pl/api/v1/applications/proxy?pagination=false&status=3', {
+      headers: {
+        'Accept': 'application/json, text/plain, */*',
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Origin': 'https://pio-przybysz.duw.pl',
+        'Referer': 'https://pio-przybysz.duw.pl/'
+      }
+    });
+    const allApps = await allAppsResp.json();
+    allApps.forEach(app => {
+      appMeta[app.applicationNumber] = {
+        applicationAcceptedAt: app.applicationAcceptedAt,
+        applicationInspector: app.applicationInspector
+      };
+    });
+
     // For each applicationNumber, get news by applicationId
     let allNews = [];
     for (const number of applicationNumbers) {
@@ -108,7 +130,8 @@ async function checkNews() {
     await chrome.storage.local.set({ 
       lastCheck: new Date().toISOString(),
       news: allNews,
-      applicationNumbers
+      applicationNumbers,
+      applicationMeta: appMeta
     });
 
     // Count news for selected period
@@ -122,6 +145,13 @@ async function checkNews() {
     const count = newsInPeriod.length;
     chrome.action.setBadgeBackgroundColor({ color: '#2196F3' });
     chrome.action.setBadgeText({ text: count > 0 ? count.toString() : '' });
+
+    // После выполнения — обновить alarm
+    let autoUpdatePeriod = parseFloat(settings.autoUpdatePeriod);
+    if (isNaN(autoUpdatePeriod) || autoUpdatePeriod <= 0) autoUpdatePeriod = 3; // default 3 hours
+    chrome.alarms.clear('checkNews', () => {
+      chrome.alarms.create('checkNews', { periodInMinutes: autoUpdatePeriod * 60 });
+    });
 
   } catch (error) {
     console.error('Error checking news:', error);
@@ -147,9 +177,6 @@ async function getApplicationsMap(token) {
   });
   return map;
 }
-
-// Check news every 5 hours
-setInterval(checkNews, 5 * 60 * 60 * 1000); 
 
 chrome.alarms.onAlarm.addListener(alarm => {
   if (alarm.name === 'checkNews') {

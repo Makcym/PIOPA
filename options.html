@@ -114,7 +114,16 @@
     <input type="text" id="applications" placeholder="Enter application numbers separated by commas">
   </div>
 
-  <div class="form-group">
+  <div>
+    <button id="testConnection">Get Applications</button>
+  </div>
+  
+  <div id="applicationsList" class="applications-list">
+    <h3>Available Applications:</h3>
+    <div id="applicationsListContent"></div>
+  </div>
+
+  <div class="form-group" style="margin-top: 24px;">
     <label for="newsPeriod">Show news for period:</label>
     <select id="newsPeriod">
       <option value="all">All time</option>
@@ -131,23 +140,24 @@
       <option value="5h">5 hours</option>
     </select>
   </div>
-  
-  <div>
-    <button id="testConnection">Get Applications</button>
-  </div>
-  
-  <div id="successMessage" class="success-message">Settings saved successfully!</div>
-  <div id="errorMessage" class="error-message"></div>
-  
-  <div id="applicationsList" class="applications-list">
-    <h3>Available Applications:</h3>
-    <div id="applicationsListContent"></div>
+
+  <div class="form-group" style="margin-top: 24px;">
+    <label for="autoUpdatePeriod">Auto update period:</label>
+    <select id="autoUpdatePeriod">
+      <option value="0.5">30 min</option>
+      <option value="1">1 hour</option>
+      <option value="2">2 hours</option>
+      <option value="3" selected>3 hours</option>
+      <option value="5">5 hours</option>
+      <option value="10">10 hours</option>
+    </select>
   </div>
 
-  <div class="button-group">
-    <button id="save">Save Settings</button>
+  <div class="button-group" style="margin-top: 32px;">
+      <button id="save">Save Settings</button>
   </div>
-  
+  <div id="successMessage" class="success-message">Settings saved successfully!</div>
+  <div id="errorMessage" class="error-message"></div>
   <script src="options.js"></script>
 </body>
 </html> 
