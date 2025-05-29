@@ -1,9 +1,10 @@
 // Load saved settings when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-  chrome.storage.sync.get(['username', 'password', 'applications'], (result) => {
+  chrome.storage.sync.get(['username', 'password', 'applications', 'newsPeriod'], (result) => {
     if (result.username) document.getElementById('username').value = result.username;
     if (result.password) document.getElementById('password').value = result.password;
     if (result.applications) document.getElementById('applications').value = result.applications;
+    if (result.newsPeriod) document.getElementById('newsPeriod').value = result.newsPeriod;
   });
 });
 
@@ -12,17 +13,24 @@ document.getElementById('save').addEventListener('click', () => {
   const username = document.getElementById('username').value;
   const password = document.getElementById('password').value;
   const applications = document.getElementById('applications').value;
+  const newsPeriod = document.getElementById('newsPeriod').value;
 
   chrome.storage.sync.set({
     username,
     password,
-    applications
+    applications,
+    newsPeriod
   }, () => {
     const successMessage = document.getElementById('successMessage');
     successMessage.style.display = 'block';
+    
+    // Close options page after 1 second
     setTimeout(() => {
-      successMessage.style.display = 'none';
-    }, 2000);
+      window.close();
+    }, 1000);
+
+    // Trigger news check in background
+    chrome.runtime.sendMessage({ type: 'checkNews' });
   });
 });
 
@@ -108,15 +116,26 @@ document.getElementById('testConnection').addEventListener('click', async () => 
       dateSpan.className = 'application-date';
       dateSpan.textContent = formatDate(app.acceptedAt);
       
-      appElement.appendChild(numberSpan);
-      appElement.appendChild(dateSpan);
-      
-      appElement.onclick = () => {
+      // Add button
+      const addButton = document.createElement('button');
+      addButton.textContent = 'Add';
+      addButton.style.background = '#2196F3';
+      addButton.style.color = 'white';
+      addButton.style.border = 'none';
+      addButton.style.padding = '6px 12px';
+      addButton.style.borderRadius = '4px';
+      addButton.style.cursor = 'pointer';
+      addButton.style.marginLeft = '10px';
+      addButton.onclick = () => {
         const applicationsInput = document.getElementById('applications');
         const currentValue = applicationsInput.value;
         const newValue = currentValue ? `${currentValue}, ${app.number}` : app.number;
         applicationsInput.value = newValue;
       };
+      
+      appElement.appendChild(numberSpan);
+      appElement.appendChild(dateSpan);
+      appElement.appendChild(addButton);
       
       applicationsListContent.appendChild(appElement);
     });

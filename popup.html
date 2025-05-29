@@ -14,7 +14,11 @@
       align-items: center;
       margin-bottom: 15px;
     }
-    .settings-button {
+    .header-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    .settings-button, .refresh-button {
       background: #4CAF50;
       color: white;
       border: none;
@@ -24,8 +28,14 @@
       font-size: 14px;
       transition: background-color 0.3s;
     }
+    .refresh-button {
+      background: #2196F3;
+    }
     .settings-button:hover {
       background: #45a049;
+    }
+    .refresh-button:hover {
+      background: #1976D2;
     }
     #status {
       margin-bottom: 10px;
@@ -92,8 +102,11 @@
 </head>
 <body>
   <div class="header">
-    <h2>PIO News Checker</h2>
-    <button id="settingsButton" class="settings-button">Settings</button>
+    <h2>PIO Application Checker</h2>
+    <div class="header-buttons">
+      <button id="refreshButton" class="refresh-button">Refresh</button>
+      <button id="settingsButton" class="settings-button">Settings</button>
+    </div>
   </div>
   <div id="status"></div>
   <div id="newsList" class="news-list"></div>

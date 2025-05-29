@@ -1,5 +1,24 @@
 // Function to display news
-function displayNews(news) {
+function getPeriodStart(period) {
+  const now = new Date();
+  switch (period) {
+    case 'all': return new Date(0);
+    case '5y': return new Date(now.getFullYear() - 5, now.getMonth(), now.getDate(), now.getHours(), now.getMinutes(), now.getSeconds());
+    case '4y': return new Date(now.getFullYear() - 4, now.getMonth(), now.getDate(), now.getHours(), now.getMinutes(), now.getSeconds());
+    case '3y': return new Date(now.getFullYear() - 3, now.getMonth(), now.getDate(), now.getHours(), now.getMinutes(), now.getSeconds());
+    case '2y': return new Date(now.getFullYear() - 2, now.getMonth(), now.getDate(), now.getHours(), now.getMinutes(), now.getSeconds());
+    case '1y': return new Date(now.getFullYear() - 1, now.getMonth(), now.getDate(), now.getHours(), now.getMinutes(), now.getSeconds());
+    case '6m': return new Date(now.getFullYear(), now.getMonth() - 6, now.getDate(), now.getHours(), now.getMinutes(), now.getSeconds());
+    case '1m': return new Date(now.getFullYear(), now.getMonth() - 1, now.getDate(), now.getHours(), now.getMinutes(), now.getSeconds());
+    case '1w': return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    case '3d': return new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+    case '1d': return new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000);
+    case '5h': return new Date(now.getTime() - 5 * 60 * 60 * 1000);
+    default: return new Date(now.getFullYear() - 3, now.getMonth(), now.getDate(), now.getHours(), now.getMinutes(), now.getSeconds());
+  }
+}
+
+function displayNews(news, applicationNumbers, newsPeriod) {
   const statusDiv = document.getElementById('status');
   const newsListDiv = document.getElementById('newsList');
   
@@ -8,36 +27,67 @@ function displayNews(news) {
   statusDiv.className = '';
   newsListDiv.innerHTML = '';
 
+  // Filter news by period
+  const now = new Date();
+  const periodStart = getPeriodStart(newsPeriod || '3y');
+  const filteredNews = news.filter(item => {
+    const sentAt = new Date(item.sentAt);
+    return sentAt >= periodStart && sentAt <= now;
+  });
+
   // Update status
-  statusDiv.textContent = `Found ${news.length} news items`;
+  statusDiv.textContent = `Found ${filteredNews.length} news items`;
   statusDiv.className = 'success';
-  
-  // Display news items
-  if (news.length > 0) {
-    // Sort news by date (newest first)
-    news.sort((a, b) => new Date(b.sentAt) - new Date(a.sentAt));
-    
-    news.forEach(item => {
-      const newsItem = document.createElement('div');
-      newsItem.className = 'news-item';
-      
-      const title = document.createElement('a');
-      title.className = 'news-title';
-      title.textContent = item.title;
-      title.href = `https://pio-przybysz.duw.pl/szczegoly-wniosku/${item.application}`;
-      title.target = '_blank'; // Open in new tab
-      
-      const date = document.createElement('div');
-      date.className = 'news-date';
-      date.textContent = new Date(item.sentAt).toLocaleString();
-      
-      newsItem.appendChild(title);
-      newsItem.appendChild(date);
-      newsListDiv.appendChild(newsItem);
-    });
-  } else {
-    newsListDiv.innerHTML = '<div class="no-news">No news found</div>';
-  }
+
+  // Group news by applicationNumber
+  const groupedNews = {};
+  filteredNews.forEach(item => {
+    const appNum = item.applicationNumber;
+    if (!groupedNews[appNum]) groupedNews[appNum] = [];
+    groupedNews[appNum].push(item);
+  });
+
+  // For each applicationNumber from settings, show news or 'No news for application X'
+  applicationNumbers.forEach(appNum => {
+    const caseHeader = document.createElement('div');
+    caseHeader.className = 'case-header';
+    caseHeader.textContent = `Case ${appNum}`;
+    caseHeader.style.fontWeight = 'bold';
+    caseHeader.style.marginTop = '10px';
+    caseHeader.style.marginBottom = '5px';
+    newsListDiv.appendChild(caseHeader);
+
+    const caseNews = groupedNews[appNum] || [];
+    if (caseNews.length > 0) {
+      caseNews.sort((a, b) => new Date(b.sentAt) - new Date(a.sentAt));
+      caseNews.forEach(item => {
+        const newsItem = document.createElement('div');
+        newsItem.className = 'news-item';
+
+        // If title contains 'Decyzja', make background slightly green
+        if (item.title && item.title.toLowerCase().includes('decyzja')) {
+          newsItem.style.backgroundColor = '#e0f7e9';
+        }
+
+        const title = document.createElement('div');
+        title.className = 'news-title';
+        title.textContent = item.title;
+
+        const date = document.createElement('div');
+        date.className = 'news-date';
+        date.textContent = new Date(item.sentAt).toLocaleString();
+
+        newsItem.appendChild(title);
+        newsItem.appendChild(date);
+        newsListDiv.appendChild(newsItem);
+      });
+    } else {
+      const noNews = document.createElement('div');
+      noNews.className = 'no-news';
+      noNews.textContent = `No news for application ${appNum}`;
+      newsListDiv.appendChild(noNews);
+    }
+  });
 }
 
 // Function to show settings required message
@@ -55,6 +105,24 @@ function showSettingsRequired() {
   `;
 }
 
+async function getApplicationsMap(token) {
+  const resp = await fetch('https://api-przybysz.duw.pl/api/v1/applications/proxy?pagination=false&status=3', {
+    headers: {
+      'Accept': 'application/json, text/plain, */*',
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      'Origin': 'https://pio-przybysz.duw.pl',
+      'Referer': 'https://pio-przybysz.duw.pl/'
+    }
+  });
+  const data = await resp.json();
+  const map = {};
+  data.forEach(app => {
+    map[app.applicationNumber] = app.applicationId;
+  });
+  return map;
+}
+
 // Function to check news
 async function checkNews() {
   const statusDiv = document.getElementById('status');
@@ -67,8 +135,7 @@ async function checkNews() {
 
   try {
     // Get saved settings
-    const settings = await chrome.storage.sync.get(['username', 'password', 'applications']);
-    
+    const settings = await chrome.storage.sync.get(['username', 'password', 'applications', 'newsPeriod']);
     if (!settings.username || !settings.password || !settings.applications) {
       showSettingsRequired();
       return;
@@ -96,12 +163,16 @@ async function checkNews() {
     const tokenData = await tokenResponse.json();
     const token = tokenData.token;
 
-    // Get news for all applications
-    const applications = settings.applications.split(',').map(app => app.trim());
-    let allNews = [];
+    // Get application map (number -> id)
+    const applicationNumbers = settings.applications.split(',').map(app => app.trim());
+    const appMap = await getApplicationsMap(token);
 
-    for (const application of applications) {
-      const newsResponse = await fetch(`https://api-przybysz.duw.pl/api/v1/communiques?application=${application}&pagination=false`, {
+    // For each applicationNumber, get news by applicationId
+    let allNews = [];
+    for (const number of applicationNumbers) {
+      const appId = appMap[number];
+      if (!appId) continue;
+      const newsResponse = await fetch(`https://api-przybysz.duw.pl/api/v1/communiques?application=${appId}&pagination=false`, {
         headers: {
           'Accept': 'application/json, text/plain, */*',
           'Authorization': `Bearer ${token}`,
@@ -110,31 +181,28 @@ async function checkNews() {
           'Referer': 'https://pio-przybysz.duw.pl/'
         }
       });
-
-      if (!newsResponse.ok) {
-        console.error(`Failed to get news for application ${application}`);
-        continue;
-      }
-
+      if (!newsResponse.ok) continue;
       const newsData = await newsResponse.json();
-      const news = newsData['hydra:member'].map(item => ({
-        ...item,
-        application // Add application number to each news item
-      }));
-      allNews = allNews.concat(news);
+      if (newsData['hydra:member'] && Array.isArray(newsData['hydra:member'])) {
+        const news = newsData['hydra:member'].map(item => ({
+          ...item,
+          applicationNumber: number
+        }));
+        allNews = allNews.concat(news);
+      }
     }
 
     // Store news in storage
-    chrome.storage.local.set({ 
+    await chrome.storage.local.set({ 
       lastCheck: new Date().toISOString(),
-      news: allNews
+      news: allNews,
+      applicationNumbers
     });
 
-    // Display all news
-    displayNews(allNews);
+    // Display all news filtered by period
+    displayNews(allNews, applicationNumbers, settings.newsPeriod || '3y');
 
   } catch (error) {
-    console.error('Error:', error);
     statusDiv.textContent = 'Error: ' + (error.message || 'Failed to get news');
     statusDiv.className = 'error';
     newsListDiv.innerHTML = '';
@@ -143,33 +211,20 @@ async function checkNews() {
 
 // Load news when popup opens
 document.addEventListener('DOMContentLoaded', () => {
-  // First try to get stored news
-  chrome.storage.local.get(['lastCheck', 'news'], (result) => {
-    if (result.news) {
-      displayNews(result.news);
-      
-      // Add last check time
-      const lastCheck = new Date(result.lastCheck);
-      const statusDiv = document.getElementById('status');
-      statusDiv.textContent += ` (Last check: ${lastCheck.toLocaleTimeString()})`;
-    } else {
-      // If no stored news, fetch new data
-      checkNews();
-    }
-  });
+  checkNews(); // Always update news on popup open
 
-  // Add settings button handler
   document.getElementById('settingsButton').addEventListener('click', () => {
     chrome.runtime.openOptionsPage();
   });
+
+  document.getElementById('refreshButton').addEventListener('click', () => {
+    checkNews();
+  });
 });
 
-// Listen for messages from content script
+// Listen for messages from background script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  const statusDiv = document.getElementById('status');
-  
-  if (message.type === 'status') {
-    statusDiv.textContent = message.text;
-    statusDiv.className = message.success ? 'success' : 'error';
+  if (message.type === 'checkNews') {
+    checkNews();
   }
 }); 
