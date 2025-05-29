@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "PIO Application Checker",
+  "version": "1.0",
+  "description": "Checks for application on https://pio-przybysz.duw.pl/wnioski-przyjete",
+  "permissions": [
+    "storage",
+    "alarms"
+  ],
+  "host_permissions": [
+    "https://api-przybysz.duw.pl/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "options_page": "options.html",
+  "background": {
+    "service_worker": "background.js"
+  }
+} 
