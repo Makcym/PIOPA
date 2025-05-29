@@ -35,11 +35,18 @@ function displayNews(news, applicationNumbers, newsPeriod, applicationMeta) {
   statusDiv.className = '';
   newsListDiv.innerHTML = '';
 
-  // Filter news by period
+  // Filter news by period and ensure they are valid news items
   const now = new Date();
   const periodStart = getPeriodStart(newsPeriod || '3y');
   const filteredNews = news.filter(item => {
+    // Check that this is a valid news item
+    if (!item || !item.title || !item.sentAt || typeof item.title !== 'string' || item.title.trim() === '') {
+      return false;
+    }
     const sentAt = new Date(item.sentAt);
+    if (isNaN(sentAt.getTime())) {
+      return false;
+    }
     return sentAt >= periodStart && sentAt <= now;
   });
 
@@ -230,11 +237,14 @@ async function checkNews() {
       if (!newsResponse.ok) continue;
       const newsData = await newsResponse.json();
       if (newsData['hydra:member'] && Array.isArray(newsData['hydra:member'])) {
-        const news = newsData['hydra:member'].map(item => ({
-          ...item,
-          applicationNumber: number
-        }));
-        allNews = allNews.concat(news);
+        // Filter and add only valid news items
+        const validNews = newsData['hydra:member']
+          .filter(item => item && item.title && item.sentAt && typeof item.title === 'string' && item.title.trim() !== '')
+          .map(item => ({
+            ...item,
+            applicationNumber: number
+          }));
+        allNews = allNews.concat(validNews);
       }
     }
 
@@ -335,11 +345,14 @@ async function checkNewsWithMeta(applicationMeta) {
       if (!newsResponse.ok) continue;
       const newsData = await newsResponse.json();
       if (newsData['hydra:member'] && Array.isArray(newsData['hydra:member'])) {
-        const news = newsData['hydra:member'].map(item => ({
-          ...item,
-          applicationNumber: number
-        }));
-        allNews = allNews.concat(news);
+        // Filter and add only valid news items
+        const validNews = newsData['hydra:member']
+          .filter(item => item && item.title && item.sentAt && typeof item.title === 'string' && item.title.trim() !== '')
+          .map(item => ({
+            ...item,
+            applicationNumber: number
+          }));
+        allNews = allNews.concat(validNews);
       }
     }
 
