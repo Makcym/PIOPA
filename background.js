@@ -15,6 +15,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     chrome.runtime.sendMessage(message);
   } else if (message.type === 'checkNews') {
     checkNews();
+  } else if (message.type === 'getToken') {
+    // Получаем настройки и возвращаем валидный токен
+    chrome.storage.sync.get(['username', 'password'], async (settings) => {
+      try {
+        const token = await ensureValidToken(settings.username, settings.password);
+        sendResponse({ token });
+      } catch (error) {
+        sendResponse({ error: error.message });
+      }
+    });
+    return true; // Указываем, что ответ будет асинхронным
   }
 });
 
@@ -37,6 +48,58 @@ function getPeriodStart(period) {
   }
 }
 
+// Функция для получения нового токена
+async function getNewToken(username, password) {
+  const tokenResponse = await fetch('https://api-przybysz.duw.pl/api/v1/token/obtain', {
+    method: 'POST',
+    headers: {
+      'Accept': 'application/json, text/plain, */*',
+      'Content-Type': 'application/json',
+      'Origin': 'https://pio-przybysz.duw.pl',
+      'Referer': 'https://pio-przybysz.duw.pl/'
+    },
+    body: JSON.stringify({
+      login: username,
+      password: password
+    })
+  });
+
+  if (!tokenResponse.ok) {
+    throw new Error('Failed to get token');
+  }
+
+  const tokenData = await tokenResponse.json();
+  return tokenData.token;
+}
+
+// Функция для проверки и обновления токена
+async function ensureValidToken(username, password) {
+  try {
+    // Пробуем использовать существующий токен
+    const settings = await chrome.storage.sync.get(['token', 'tokenTimestamp']);
+    const now = Date.now();
+    
+    // Если токен существует и не истек (менее 23 часов с момента получения)
+    if (settings.token && settings.tokenTimestamp && (now - settings.tokenTimestamp < 23 * 60 * 60 * 1000)) {
+      return settings.token;
+    }
+    
+    // Если токен истек или не существует, получаем новый
+    const newToken = await getNewToken(username, password);
+    
+    // Сохраняем новый токен и время его получения
+    await chrome.storage.sync.set({
+      token: newToken,
+      tokenTimestamp: now
+    });
+    
+    return newToken;
+  } catch (error) {
+    console.error('Error ensuring valid token:', error);
+    throw error;
+  }
+}
+
 // Function to check news
 async function checkNews() {
   try {
@@ -49,29 +112,8 @@ async function checkNews() {
       return;
     }
 
-    // Get token
-    const tokenResponse = await fetch('https://api-przybysz.duw.pl/api/v1/token/obtain', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json, text/plain, */*',
-        'Content-Type': 'application/json',
-        'Origin': 'https://pio-przybysz.duw.pl',
-        'Referer': 'https://pio-przybysz.duw.pl/'
-      },
-      body: JSON.stringify({
-        login: settings.username,
-        password: settings.password
-      })
-    });
-
-    if (!tokenResponse.ok) {
-      console.error('Failed to get token');
-      chrome.action.setBadgeText({ text: '' });
-      return;
-    }
-
-    const tokenData = await tokenResponse.json();
-    const token = tokenData.token;
+    // Получаем валидный токен
+    const token = await ensureValidToken(settings.username, settings.password);
 
     // Get application map (number -> id)
     const applicationNumbers = settings.applications.split(',').map(app => app.trim());
@@ -140,6 +182,9 @@ async function checkNews() {
     const periodStart = getPeriodStart(period);
     const newsInPeriod = allNews.filter(item => {
       const sentAt = new Date(item.sentAt);
+      console.log(sentAt);
+      console.log(periodStart);
+      console.log(now);
       return sentAt >= periodStart && sentAt <= now;
     });
     const count = newsInPeriod.length;
@@ -182,4 +227,4 @@ chrome.alarms.onAlarm.addListener(alarm => {
   if (alarm.name === 'checkNews') {
     checkNews();
   }
-}); 
+});

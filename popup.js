@@ -11,18 +11,66 @@ function getPeriodStart(period) {
   const now = new Date();
   switch (period) {
     case 'all': return new Date(0);
-    case '5y': return new Date(now.getFullYear() - 5, now.getMonth(), now.getDate(), now.getHours(), now.getMinutes(), now.getSeconds());
-    case '4y': return new Date(now.getFullYear() - 4, now.getMonth(), now.getDate(), now.getHours(), now.getMinutes(), now.getSeconds());
-    case '3y': return new Date(now.getFullYear() - 3, now.getMonth(), now.getDate(), now.getHours(), now.getMinutes(), now.getSeconds());
-    case '2y': return new Date(now.getFullYear() - 2, now.getMonth(), now.getDate(), now.getHours(), now.getMinutes(), now.getSeconds());
-    case '1y': return new Date(now.getFullYear() - 1, now.getMonth(), now.getDate(), now.getHours(), now.getMinutes(), now.getSeconds());
-    case '6m': return new Date(now.getFullYear(), now.getMonth() - 6, now.getDate(), now.getHours(), now.getMinutes(), now.getSeconds());
-    case '1m': return new Date(now.getFullYear(), now.getMonth() - 1, now.getDate(), now.getHours(), now.getMinutes(), now.getSeconds());
-    case '1w': return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    case '3d': return new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
-    case '1d': return new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000);
-    case '5h': return new Date(now.getTime() - 5 * 60 * 60 * 1000);
-    default: return new Date(now.getFullYear() - 3, now.getMonth(), now.getDate(), now.getHours(), now.getMinutes(), now.getSeconds());
+    case '5y': {
+      const date = new Date(now);
+      date.setFullYear(date.getFullYear() - 5);
+      return date;
+    }
+    case '4y': {
+      const date = new Date(now);
+      date.setFullYear(date.getFullYear() - 4);
+      return date;
+    }
+    case '3y': {
+      const date = new Date(now);
+      date.setFullYear(date.getFullYear() - 3);
+      return date;
+    }
+    case '2y': {
+      const date = new Date(now);
+      date.setFullYear(date.getFullYear() - 2);
+      return date;
+    }
+    case '1y': {
+      const date = new Date(now);
+      date.setFullYear(date.getFullYear() - 1);
+      return date;
+    }
+    case '6m': {
+      const date = new Date(now);
+      date.setMonth(date.getMonth() - 6);
+      return date;
+    }
+    case '1m': {
+      const date = new Date(now);
+      date.setMonth(date.getMonth() - 1);
+      return date;
+    }
+    case '1w': {
+      const date = new Date(now);
+      date.setDate(date.getDate() - 7);
+      return date;
+    }
+    case '3d': {
+      const date = new Date(now);
+      date.setDate(date.getDate() - 3);
+      return date;
+    }
+    case '1d': {
+      const date = new Date(now);
+      date.setDate(date.getDate() - 1);
+      return date;
+    }
+    case '5h': {
+      const date = new Date(now);
+      date.setHours(date.getHours() - 5);
+      return date;
+    }
+    default: {
+      const date = new Date(now);
+      date.setFullYear(date.getFullYear() - 3);
+      return date;
+    }
   }
 }
 
@@ -38,17 +86,19 @@ function displayNews(news, applicationNumbers, newsPeriod, applicationMeta) {
   // Filter news by period and ensure they are valid news items
   const now = new Date();
   const periodStart = getPeriodStart(newsPeriod || '3y');
+  console.log('Period start:', periodStart.toISOString());
+  console.log('Now:', now.toISOString());
+  
   const filteredNews = news.filter(item => {
-    // Check that this is a valid news item
-    if (!item || !item.title || !item.sentAt || typeof item.title !== 'string' || item.title.trim() === '') {
-      return false;
-    }
     const sentAt = new Date(item.sentAt);
-    if (isNaN(sentAt.getTime())) {
-      return false;
-    }
-    return sentAt >= periodStart && sentAt <= now;
+    console.log('News item:', item.title, 'sent at:', sentAt.toISOString());
+    const isInPeriod = sentAt >= periodStart && sentAt <= now;
+    console.log('Is in period:', isInPeriod);
+    return isInPeriod;
   });
+
+  console.log('Filtered news count:', filteredNews.length);
+  console.log('Original news count:', news.length);
 
   // Group news by applicationNumber
   const groupedNews = {};
@@ -58,13 +108,9 @@ function displayNews(news, applicationNumbers, newsPeriod, applicationMeta) {
     groupedNews[appNum].push(item);
   });
 
-  // Filter applicationNumbers: только те, у которых заявка принята после начала периода
-  const filteredAppNumbers = applicationNumbers.filter(appNum => {
-    const meta = applicationMeta && applicationMeta[appNum] ? applicationMeta[appNum] : {};
-    if (!meta.applicationAcceptedAt) return false;
-    const accepted = new Date(meta.applicationAcceptedAt);
-    return accepted >= periodStart;
-  });
+  // Используем все номера заявок из настроек
+  const filteredAppNumbers = applicationNumbers;
+  console.log('Application numbers:', filteredAppNumbers);
 
   // Update status (счётчик новостей за диапазон)
   statusDiv.textContent = `Found ${filteredNews.length} news item${filteredNews.length === 1 ? '' : 's'}`;
@@ -194,27 +240,16 @@ async function checkNews() {
       return;
     }
 
-    // Get token
-    const tokenResponse = await fetch('https://api-przybysz.duw.pl/api/v1/token/obtain', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json, text/plain, */*',
-        'Content-Type': 'application/json',
-        'Origin': 'https://pio-przybysz.duw.pl',
-        'Referer': 'https://pio-przybysz.duw.pl/'
-      },
-      body: JSON.stringify({
-        login: settings.username,
-        password: settings.password
-      })
+    // Получаем валидный токен через background script
+    const token = await new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage({ type: 'getToken' }, response => {
+        if (response.error) {
+          reject(new Error(response.error));
+        } else {
+          resolve(response.token);
+        }
+      });
     });
-
-    if (!tokenResponse.ok) {
-      throw new Error('Failed to get token');
-    }
-
-    const tokenData = await tokenResponse.json();
-    const token = tokenData.token;
 
     // Get application map (number -> id)
     const applicationNumbers = settings.applications.split(',').map(app => app.trim());
