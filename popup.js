@@ -216,9 +216,16 @@ async function getApplicationsMap(token) {
   });
   const data = await resp.json();
   const map = {};
-  data.forEach(app => {
-    map[app.applicationNumber] = app.applicationId;
+  
+  // Проверяем, что data это массив или объект с hydra:member
+  const applications = Array.isArray(data) ? data : (data['hydra:member'] || []);
+  
+  applications.forEach(app => {
+    if (app && app.applicationNumber) {
+      map[app.applicationNumber] = app.applicationId;
+    }
   });
+  
   return map;
 }
 
