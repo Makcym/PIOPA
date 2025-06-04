@@ -26,6 +26,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
     });
     return true; // Указываем, что ответ будет асинхронным
+  } else if (message.type === 'refreshToken') {
+    chrome.storage.sync.get(['username', 'password'], async (settings) => {
+      try {
+        const token = await ensureValidToken(settings.username, settings.password, true);
+        sendResponse({ token });
+      } catch (error) {
+        sendResponse({ error: error.message });
+      }
+    });
+    return true;
   }
 });
 
@@ -73,14 +83,14 @@ async function getNewToken(username, password) {
 }
 
 // Функция для проверки и обновления токена
-async function ensureValidToken(username, password) {
+async function ensureValidToken(username, password, forceRefresh = false) {
   try {
     // Пробуем использовать существующий токен
     const settings = await chrome.storage.sync.get(['token', 'tokenTimestamp']);
     const now = Date.now();
-    
+
     // Если токен существует и не истек (менее 23 часов с момента получения)
-    if (settings.token && settings.tokenTimestamp && (now - settings.tokenTimestamp < 23 * 60 * 60 * 1000)) {
+    if (!forceRefresh && settings.token && settings.tokenTimestamp && (now - settings.tokenTimestamp < 23 * 60 * 60 * 1000)) {
       return settings.token;
     }
     
@@ -96,6 +106,7 @@ async function ensureValidToken(username, password) {
     return newToken;
   } catch (error) {
     console.error('Error ensuring valid token:', error);
+    await chrome.storage.sync.remove(['token', 'tokenTimestamp']);
     throw error;
   }
 }
@@ -113,15 +124,17 @@ async function checkNews() {
     }
 
     // Получаем валидный токен
-    const token = await ensureValidToken(settings.username, settings.password);
+    let token = await ensureValidToken(settings.username, settings.password);
 
     // Get application map (number -> id)
     const applicationNumbers = settings.applications.split(',').map(app => app.trim());
-    const appMap = await getApplicationsMap(token);
+    const mapResult = await getApplicationsMap(token, settings.username, settings.password);
+    token = mapResult.token;
+    const appMap = mapResult.map;
 
     // Получить мета-данные заявок
     const appMeta = {};
-    const allAppsResp = await fetch('https://api-przybysz.duw.pl/api/v1/applications/proxy?pagination=false&status=3', {
+    let allAppsResp = await fetch('https://api-przybysz.duw.pl/api/v1/applications/proxy?pagination=false&status=3', {
       headers: {
         'Accept': 'application/json, text/plain, */*',
         'Authorization': `Bearer ${token}`,
@@ -130,6 +143,18 @@ async function checkNews() {
         'Referer': 'https://pio-przybysz.duw.pl/'
       }
     });
+    if (allAppsResp.status === 401) {
+      token = await ensureValidToken(settings.username, settings.password, true);
+      allAppsResp = await fetch('https://api-przybysz.duw.pl/api/v1/applications/proxy?pagination=false&status=3', {
+        headers: {
+          'Accept': 'application/json, text/plain, */*',
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Origin': 'https://pio-przybysz.duw.pl',
+          'Referer': 'https://pio-przybysz.duw.pl/'
+        }
+      });
+    }
     const allApps = await allAppsResp.json();
     allApps.forEach(app => {
       appMeta[app.applicationNumber] = {
@@ -143,7 +168,7 @@ async function checkNews() {
     for (const number of applicationNumbers) {
       const appId = appMap[number];
       if (!appId) continue;
-      const newsResponse = await fetch(`https://api-przybysz.duw.pl/api/v1/communiques?application=${appId}&pagination=false`, {
+      let newsResponse = await fetch(`https://api-przybysz.duw.pl/api/v1/communiques?application=${appId}&pagination=false`, {
         headers: {
           'Accept': 'application/json, text/plain, */*',
           'Authorization': `Bearer ${token}`,
@@ -152,6 +177,18 @@ async function checkNews() {
           'Referer': 'https://pio-przybysz.duw.pl/'
         }
       });
+      if (newsResponse.status === 401) {
+        token = await ensureValidToken(settings.username, settings.password, true);
+        newsResponse = await fetch(`https://api-przybysz.duw.pl/api/v1/communiques?application=${appId}&pagination=false`, {
+          headers: {
+            'Accept': 'application/json, text/plain, */*',
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Origin': 'https://pio-przybysz.duw.pl',
+            'Referer': 'https://pio-przybysz.duw.pl/'
+          }
+        });
+      }
 
       if (!newsResponse.ok) {
         console.error(`Failed to get news for application ${number}`);
@@ -182,9 +219,6 @@ async function checkNews() {
     const periodStart = getPeriodStart(period);
     const newsInPeriod = allNews.filter(item => {
       const sentAt = new Date(item.sentAt);
-      console.log(sentAt);
-      console.log(periodStart);
-      console.log(now);
       return sentAt >= periodStart && sentAt <= now;
     });
     const count = newsInPeriod.length;
@@ -205,8 +239,8 @@ async function checkNews() {
   }
 }
 
-async function getApplicationsMap(token) {
-  const resp = await fetch('https://api-przybysz.duw.pl/api/v1/applications/proxy?pagination=false&status=3', {
+async function getApplicationsMap(token, username, password) {
+  let resp = await fetch('https://api-przybysz.duw.pl/api/v1/applications/proxy?pagination=false&status=3', {
     headers: {
       'Accept': 'application/json, text/plain, */*',
       'Authorization': `Bearer ${token}`,
@@ -215,12 +249,27 @@ async function getApplicationsMap(token) {
       'Referer': 'https://pio-przybysz.duw.pl/'
     }
   });
+  if (resp.status === 401) {
+    token = await ensureValidToken(username, password, true);
+    resp = await fetch('https://api-przybysz.duw.pl/api/v1/applications/proxy?pagination=false&status=3', {
+      headers: {
+        'Accept': 'application/json, text/plain, */*',
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Origin': 'https://pio-przybysz.duw.pl',
+        'Referer': 'https://pio-przybysz.duw.pl/'
+      }
+    });
+  }
+  if (!resp.ok) {
+    throw new Error('Failed to get applications map');
+  }
   const data = await resp.json();
   const map = {};
   data.forEach(app => {
     map[app.applicationNumber] = app.applicationId;
   });
-  return map;
+  return { map, token };
 }
 
 chrome.alarms.onAlarm.addListener(alarm => {

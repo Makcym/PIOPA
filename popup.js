@@ -204,11 +204,40 @@ function showSettingsRequired() {
   `;
 }
 
-async function getApplicationsMap(token) {
-  const resp = await fetch('https://api-przybysz.duw.pl/api/v1/applications/proxy?pagination=false&status=3', {
+async function requestToken() {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage({ type: 'getToken' }, resp => {
+      if (resp && resp.token) resolve(resp.token);
+      else reject(new Error(resp && resp.error ? resp.error : 'Failed to get token'));
+    });
+  });
+}
+
+async function refreshToken() {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage({ type: 'refreshToken' }, resp => {
+      if (resp && resp.token) resolve(resp.token);
+      else reject(new Error(resp && resp.error ? resp.error : 'Failed to refresh token'));
+    });
+  });
+}
+
+async function fetchWithAuth(url, options = {}) {
+  let token = await requestToken();
+  options.headers = { ...(options.headers || {}), 'Authorization': `Bearer ${token}` };
+  let resp = await fetch(url, options);
+  if (resp.status === 401) {
+    token = await refreshToken();
+    options.headers['Authorization'] = `Bearer ${token}`;
+    resp = await fetch(url, options);
+  }
+  return resp;
+}
+
+async function getApplicationsMap() {
+  const resp = await fetchWithAuth('https://api-przybysz.duw.pl/api/v1/applications/proxy?pagination=false&status=3', {
     headers: {
       'Accept': 'application/json, text/plain, */*',
-      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
       'Origin': 'https://pio-przybysz.duw.pl',
       'Referer': 'https://pio-przybysz.duw.pl/'
@@ -247,30 +276,18 @@ async function checkNews() {
       return;
     }
 
-    // Получаем валидный токен через background script
-    const token = await new Promise((resolve, reject) => {
-      chrome.runtime.sendMessage({ type: 'getToken' }, response => {
-        if (response.error) {
-          reject(new Error(response.error));
-        } else {
-          resolve(response.token);
-        }
-      });
-    });
-
     // Get application map (number -> id)
     const applicationNumbers = settings.applications.split(',').map(app => app.trim());
-    const appMap = await getApplicationsMap(token);
+    const appMap = await getApplicationsMap();
 
     // For each applicationNumber, get news by applicationId
     let allNews = [];
     for (const number of applicationNumbers) {
       const appId = appMap[number];
       if (!appId) continue;
-      const newsResponse = await fetch(`https://api-przybysz.duw.pl/api/v1/communiques?application=${appId}&pagination=false`, {
+      const newsResponse = await fetchWithAuth(`https://api-przybysz.duw.pl/api/v1/communiques?application=${appId}&pagination=false`, {
         headers: {
           'Accept': 'application/json, text/plain, */*',
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
           'Origin': 'https://pio-przybysz.duw.pl',
           'Referer': 'https://pio-przybysz.duw.pl/'
@@ -313,10 +330,7 @@ async function checkNews() {
 
 // Load news when popup opens
 document.addEventListener('DOMContentLoaded', async () => {
-  // Get applicationMeta from storage for display
-  const metaResult = await chrome.storage.local.get(['applicationMeta']);
-  const applicationMeta = metaResult.applicationMeta || {};
-  checkNewsWithMeta(applicationMeta);
+  checkNews();
 
   document.getElementById('settingsButton').addEventListener('click', () => {
     chrome.runtime.openOptionsPage();
@@ -326,94 +340,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     checkNews();
   });
 });
-
-async function checkNewsWithMeta(applicationMeta) {
-  const statusDiv = document.getElementById('status');
-  const newsListDiv = document.getElementById('newsList');
-  
-  // Show loading state
-  statusDiv.textContent = '';
-  statusDiv.className = '';
-  newsListDiv.innerHTML = '<div class="loading">Loading news...</div>';
-
-  try {
-    // Get saved settings
-    const settings = await chrome.storage.sync.get(['username', 'password', 'applications', 'newsPeriod']);
-    if (!settings.username || !settings.password || !settings.applications) {
-      showSettingsRequired();
-      return;
-    }
-
-    // Get token
-    const tokenResponse = await fetch('https://api-przybysz.duw.pl/api/v1/token/obtain', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json, text/plain, */*',
-        'Content-Type': 'application/json',
-        'Origin': 'https://pio-przybysz.duw.pl',
-        'Referer': 'https://pio-przybysz.duw.pl/'
-      },
-      body: JSON.stringify({
-        login: settings.username,
-        password: settings.password
-      })
-    });
-
-    if (!tokenResponse.ok) {
-      throw new Error('Failed to get token');
-    }
-
-    const tokenData = await tokenResponse.json();
-    const token = tokenData.token;
-
-    // Get application map (number -> id)
-    const applicationNumbers = settings.applications.split(',').map(app => app.trim());
-    const appMap = await getApplicationsMap(token);
-
-    // For each applicationNumber, get news by applicationId
-    let allNews = [];
-    for (const number of applicationNumbers) {
-      const appId = appMap[number];
-      if (!appId) continue;
-      const newsResponse = await fetch(`https://api-przybysz.duw.pl/api/v1/communiques?application=${appId}&pagination=false`, {
-        headers: {
-          'Accept': 'application/json, text/plain, */*',
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Origin': 'https://pio-przybysz.duw.pl',
-          'Referer': 'https://pio-przybysz.duw.pl/'
-        }
-      });
-      if (!newsResponse.ok) continue;
-      const newsData = await newsResponse.json();
-      if (newsData['hydra:member'] && Array.isArray(newsData['hydra:member'])) {
-        // Filter and add only valid news items
-        const validNews = newsData['hydra:member']
-          .filter(item => item && item.title && item.sentAt && typeof item.title === 'string' && item.title.trim() !== '')
-          .map(item => ({
-            ...item,
-            applicationNumber: number
-          }));
-        allNews = allNews.concat(validNews);
-      }
-    }
-
-    // Store news in storage
-    await chrome.storage.local.set({ 
-      lastCheck: new Date().toISOString(),
-      news: allNews,
-      applicationNumbers
-    });
-
-    // Display all news filtered by period
-    displayNews(allNews, applicationNumbers, settings.newsPeriod || '3y', applicationMeta);
-
-  } catch (error) {
-    statusDiv.textContent = 'Error: ' + (error.message || 'Failed to get news');
-    statusDiv.className = 'error';
-    newsListDiv.innerHTML = '';
-  }
-}
 
 // Listen for messages from background script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
