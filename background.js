@@ -131,18 +131,25 @@ async function checkNews() {
       }
     });
     const allApps = await allAppsResp.json();
-    allApps.forEach(app => {
-      appMeta[app.applicationNumber] = {
-        applicationAcceptedAt: app.applicationAcceptedAt,
-        applicationInspector: app.applicationInspector
-      };
+    // Проверяем, что allApps это массив или объект с hydra:member
+    const applicationsData = Array.isArray(allApps) ? allApps : (allApps['hydra:member'] || []);
+    applicationsData.forEach(app => {
+      if (app && app.applicationNumber) {
+        appMeta[app.applicationNumber] = {
+          applicationAcceptedAt: app.applicationAcceptedAt,
+          applicationInspector: app.applicationInspector
+        };
+      }
     });
 
     // For each applicationNumber, get news by applicationId
     let allNews = [];
     for (const number of applicationNumbers) {
       const appId = appMap[number];
-      if (!appId) continue;
+      if (!appId) {
+        console.log(`No appId found for application number: ${number}. Skipping.`);
+        continue;
+      }
       const newsResponse = await fetch(`https://api-przybysz.duw.pl/api/v1/communiques?application=${appId}&pagination=false`, {
         headers: {
           'Accept': 'application/json, text/plain, */*',
@@ -176,20 +183,8 @@ async function checkNews() {
       applicationMeta: appMeta
     });
 
-    // Count news for selected period
-    const now = new Date();
-    const period = settings.newsPeriod || '3y';
-    const periodStart = getPeriodStart(period);
-    const newsInPeriod = allNews.filter(item => {
-      const sentAt = new Date(item.sentAt);
-      console.log(sentAt);
-      console.log(periodStart);
-      console.log(now);
-      return sentAt >= periodStart && sentAt <= now;
-    });
-    const count = newsInPeriod.length;
-    chrome.action.setBadgeBackgroundColor({ color: '#2196F3' });
-    chrome.action.setBadgeText({ text: count > 0 ? count.toString() : '' });
+    // Убираем отображение значка (badge)
+    chrome.action.setBadgeText({ text: '' });
 
     // После выполнения — обновить alarm
     let autoUpdatePeriod = parseFloat(settings.autoUpdatePeriod);
@@ -200,8 +195,8 @@ async function checkNews() {
 
   } catch (error) {
     console.error('Error checking news:', error);
-    chrome.action.setBadgeText({ text: '!' });
-    chrome.action.setBadgeBackgroundColor({ color: '#f44336' });
+    // Убираем отображение ошибки на значке
+    chrome.action.setBadgeText({ text: '' });
   }
 }
 
@@ -217,9 +212,16 @@ async function getApplicationsMap(token) {
   });
   const data = await resp.json();
   const map = {};
-  data.forEach(app => {
-    map[app.applicationNumber] = app.applicationId;
+  
+  // Проверяем, что data это массив или объект с hydra:member
+  const applications = Array.isArray(data) ? data : (data['hydra:member'] || []);
+  
+  applications.forEach(app => {
+    if (app && app.applicationNumber) {
+      map[app.applicationNumber] = app.applicationId;
+    }
   });
+  
   return map;
 }
 
