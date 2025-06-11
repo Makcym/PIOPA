@@ -72,27 +72,21 @@ async function getNewToken(username, password) {
   return tokenData.token;
 }
 
-// Функция для проверки и обновления токена
+// Функция для проверки и обновления токена - всегда получаем свежий токен
 async function ensureValidToken(username, password) {
   try {
-    // Пробуем использовать существующий токен
-    const settings = await chrome.storage.sync.get(['token', 'tokenTimestamp']);
-    const now = Date.now();
-    
-    // Если токен существует и не истек (менее 23 часов с момента получения)
-    if (settings.token && settings.tokenTimestamp && (now - settings.tokenTimestamp < 23 * 60 * 60 * 1000)) {
-      return settings.token;
-    }
-    
-    // Если токен истек или не существует, получаем новый
+    // Всегда получаем новый токен при каждом запросе для надежности
+    console.log('Getting fresh token for user:', username);
     const newToken = await getNewToken(username, password);
     
     // Сохраняем новый токен и время его получения
+    const now = Date.now();
     await chrome.storage.sync.set({
       token: newToken,
       tokenTimestamp: now
     });
     
+    console.log('Fresh token obtained successfully');
     return newToken;
   } catch (error) {
     console.error('Error ensuring valid token:', error);
@@ -183,8 +177,19 @@ async function checkNews() {
       applicationMeta: appMeta
     });
 
-    // Убираем отображение значка (badge)
-    chrome.action.setBadgeText({ text: '' });
+    // Count news for selected period and display on badge
+    const now = new Date();
+    const period = settings.newsPeriod || '3y';
+    const periodStart = getPeriodStart(period);
+    const newsInPeriod = allNews.filter(item => {
+      const sentAt = new Date(item.sentAt);
+      return sentAt >= periodStart && sentAt <= now;
+    });
+    const count = newsInPeriod.length;
+    chrome.action.setBadgeBackgroundColor({ color: '#2196F3' });
+    chrome.action.setBadgeText({ text: count > 0 ? count.toString() : '' });
+    
+    console.log(`Badge updated with ${count} news items for period ${period}`);
 
     // После выполнения — обновить alarm
     let autoUpdatePeriod = parseFloat(settings.autoUpdatePeriod);
@@ -195,7 +200,7 @@ async function checkNews() {
 
   } catch (error) {
     console.error('Error checking news:', error);
-    // Убираем отображение ошибки на значке
+    // Очищаем значок при ошибке, чтобы он не "застревал"
     chrome.action.setBadgeText({ text: '' });
   }
 }

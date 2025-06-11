@@ -100,6 +100,11 @@ function displayNews(news, applicationNumbers, newsPeriod, applicationMeta) {
   console.log('Filtered news count:', filteredNews.length);
   console.log('Original news count:', news.length);
 
+  // Update badge with filtered news count
+  const count = filteredNews.length;
+  chrome.action.setBadgeBackgroundColor({ color: '#2196F3' });
+  chrome.action.setBadgeText({ text: count > 0 ? count.toString() : '' });
+
   // Group news by applicationNumber
   const groupedNews = {};
   filteredNews.forEach(item => {
@@ -229,7 +234,7 @@ async function getApplicationsMap(token) {
   return map;
 }
 
-// Function to check news
+// Function to check news - использует background.js для получения свежего токена
 async function checkNews() {
   const statusDiv = document.getElementById('status');
   const newsListDiv = document.getElementById('newsList');
@@ -247,7 +252,7 @@ async function checkNews() {
       return;
     }
 
-    // Получаем валидный токен через background script
+    // Получаем валидный токен через background script (всегда свежий)
     const token = await new Promise((resolve, reject) => {
       chrome.runtime.sendMessage({ type: 'getToken' }, response => {
         if (response.error) {
@@ -308,6 +313,8 @@ async function checkNews() {
     statusDiv.textContent = 'Error: ' + (error.message || 'Failed to get news');
     statusDiv.className = 'error';
     newsListDiv.innerHTML = '';
+    // Очистить badge при ошибке
+    chrome.action.setBadgeText({ text: '' });
   }
 }
 
@@ -316,7 +323,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Get applicationMeta from storage for display
   const metaResult = await chrome.storage.local.get(['applicationMeta']);
   const applicationMeta = metaResult.applicationMeta || {};
-  checkNewsWithMeta(applicationMeta);
+  
+  // Загружаем сохраненные новости для быстрого отображения
+  const savedData = await chrome.storage.local.get(['news', 'applicationNumbers']);
+  const settings = await chrome.storage.sync.get(['newsPeriod']);
+  
+  if (savedData.news && savedData.applicationNumbers) {
+    // Показываем сохраненные новости сразу
+    displayNews(savedData.news, savedData.applicationNumbers, settings.newsPeriod || '3y', applicationMeta);
+  } else {
+    // Если нет сохраненных данных, проверяем новости
+    checkNews();
+  }
 
   document.getElementById('settingsButton').addEventListener('click', () => {
     chrome.runtime.openOptionsPage();
@@ -326,94 +344,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     checkNews();
   });
 });
-
-async function checkNewsWithMeta(applicationMeta) {
-  const statusDiv = document.getElementById('status');
-  const newsListDiv = document.getElementById('newsList');
-  
-  // Show loading state
-  statusDiv.textContent = '';
-  statusDiv.className = '';
-  newsListDiv.innerHTML = '<div class="loading">Loading news...</div>';
-
-  try {
-    // Get saved settings
-    const settings = await chrome.storage.sync.get(['username', 'password', 'applications', 'newsPeriod']);
-    if (!settings.username || !settings.password || !settings.applications) {
-      showSettingsRequired();
-      return;
-    }
-
-    // Get token
-    const tokenResponse = await fetch('https://api-przybysz.duw.pl/api/v1/token/obtain', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json, text/plain, */*',
-        'Content-Type': 'application/json',
-        'Origin': 'https://pio-przybysz.duw.pl',
-        'Referer': 'https://pio-przybysz.duw.pl/'
-      },
-      body: JSON.stringify({
-        login: settings.username,
-        password: settings.password
-      })
-    });
-
-    if (!tokenResponse.ok) {
-      throw new Error('Failed to get token');
-    }
-
-    const tokenData = await tokenResponse.json();
-    const token = tokenData.token;
-
-    // Get application map (number -> id)
-    const applicationNumbers = settings.applications.split(',').map(app => app.trim());
-    const appMap = await getApplicationsMap(token);
-
-    // For each applicationNumber, get news by applicationId
-    let allNews = [];
-    for (const number of applicationNumbers) {
-      const appId = appMap[number];
-      if (!appId) continue;
-      const newsResponse = await fetch(`https://api-przybysz.duw.pl/api/v1/communiques?application=${appId}&pagination=false`, {
-        headers: {
-          'Accept': 'application/json, text/plain, */*',
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Origin': 'https://pio-przybysz.duw.pl',
-          'Referer': 'https://pio-przybysz.duw.pl/'
-        }
-      });
-      if (!newsResponse.ok) continue;
-      const newsData = await newsResponse.json();
-      if (newsData['hydra:member'] && Array.isArray(newsData['hydra:member'])) {
-        // Filter and add only valid news items
-        const validNews = newsData['hydra:member']
-          .filter(item => item && item.title && item.sentAt && typeof item.title === 'string' && item.title.trim() !== '')
-          .map(item => ({
-            ...item,
-            applicationNumber: number
-          }));
-        allNews = allNews.concat(validNews);
-      }
-    }
-
-    // Store news in storage
-    await chrome.storage.local.set({ 
-      lastCheck: new Date().toISOString(),
-      news: allNews,
-      applicationNumbers
-    });
-
-    // Display all news filtered by period
-    displayNews(allNews, applicationNumbers, settings.newsPeriod || '3y', applicationMeta);
-
-  } catch (error) {
-    statusDiv.textContent = 'Error: ' + (error.message || 'Failed to get news');
-    statusDiv.className = 'error';
-    newsListDiv.innerHTML = '';
-  }
-}
 
 // Listen for messages from background script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
