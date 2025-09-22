@@ -1,3 +1,26 @@
+// Маппинг статусов stage к текстовым описаниям
+function getStageText(stage) {
+  const stageMapping = {
+    1: 'Wniosek złożony',
+    2: 'W trakcie weryfikacji',
+    3: 'Oczekuje na dokumenty',
+    4: 'Dokumenty kompletne',
+    5: 'W trakcie rozpatrywania',
+    6: 'Oczekuje na decyzję',
+    7: 'Decyzja wydana',
+    8: 'Decyzja pozytywna',
+    9: 'Decyzja negatywna',
+    10: 'Karta w produkcji',
+    11: 'Karta pobytu do odbioru',
+    12: 'Karta pobyta wydana',
+    13: 'Sprawa zakończona',
+    14: 'Odwołanie',
+    15: 'Inne'
+  };
+  
+  return stageMapping[stage] || `Status ${stage}`;
+}
+
 // Initialize extension
 chrome.runtime.onInstalled.addListener(async () => {
   console.log('PIO Application Checker extension installed');
@@ -89,12 +112,54 @@ async function checkNews() {
       }
     });
     const allApps = await allAppsResp.json();
+    console.log('Full API response for applications:', allApps);
     allApps.forEach(app => {
+      console.log('Application data:', app);
       appMeta[app.applicationNumber] = {
         applicationAcceptedAt: app.applicationAcceptedAt,
-        applicationInspector: app.applicationInspector
+        applicationInspector: app.applicationInspector,
+        applicationStage: app.applicationStage,
+        applicationStatus: getStageText(app.applicationStage),
+        fullAppData: app // Сохраняем все данные для анализа
       };
     });
+
+    // Попробуем получить детальную информацию о каждой заявке
+    for (const number of applicationNumbers) {
+      const appId = appMap[number];
+      if (!appId) continue;
+      
+      try {
+        // Попробуем получить детальную информацию о заявке
+        const appDetailResponse = await fetch(`https://api-przybysz.duw.pl/api/v1/applications/${appId}`, {
+          headers: {
+            'Accept': 'application/json, text/plain, */*',
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Origin': 'https://pio-przybysz.duw.pl',
+            'Referer': 'https://pio-przybysz.duw.pl/'
+          }
+        });
+        
+        if (appDetailResponse.ok) {
+          const appDetail = await appDetailResponse.json();
+          console.log(`Detailed info for application ${number}:`, appDetail);
+          
+          // Обновляем мета-данные с детальной информацией
+          if (appMeta[number]) {
+            appMeta[number].detailedInfo = appDetail;
+            // Используем stage из детальной информации, если он есть
+            const detailedStage = appDetail.stage || appDetail.applicationStage;
+            if (detailedStage) {
+              appMeta[number].applicationStage = detailedStage;
+              appMeta[number].applicationStatus = getStageText(detailedStage);
+            }
+          }
+        }
+      } catch (error) {
+        console.log(`Failed to get detailed info for application ${number}:`, error);
+      }
+    }
 
     // For each applicationNumber, get news by applicationId
     let allNews = [];
