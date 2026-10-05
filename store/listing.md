@@ -83,3 +83,22 @@ WAŻNE
 • Działa wyłącznie z portalem urzędu we Wrocławiu.
 
 Więcej i film (po rosyjsku): https://markarov.dev/demo/piopa/
+
+## Остальные поля карточки
+
+- URL главной страницы: `https://markarov.dev/demo/piopa/`
+- URL службы поддержки: `https://github.com/Makcym/PIOPA/issues`
+- URL политики конфиденциальности: `https://markarov.dev/demo/piopa/privacy.html`
+- Общие снимки — английские `screenshot-en-1..3.png`; локализованные для ru и pl.
+- Плитка: `promo-440x280.png`. Большая плитка 1400×560 не загружена.
+
+Вкладка «Конфиденциальность», обоснования:
+
+- **storage** — Keeps the user's settings (portal login, the application numbers to follow, display period, check interval) and the result of the last check in chrome.storage.local, so the popup opens instantly without signing in to the portal again. Nothing is stored in synced storage.
+- **alarms** — Runs the periodic background check of the portal at the interval the user chose (30 minutes to 10 hours) and updates the badge with the number of messages.
+- **хост** — https://api-przybysz.duw.pl is the API of the Przybysz portal (pio-przybysz.duw.pl). The extension signs in there with the user's own account and reads the stage and the messages of the user's residence-permit applications. No other host is contacted.
+
+## История
+
+- 2026-10-05 — 6.1.0 отправлена на проверку, автопубликация снята. Промо-ролик не
+  добавлен: канал YouTube упёрся в суточный лимит загрузок.
