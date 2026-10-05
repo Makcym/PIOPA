@@ -86,9 +86,11 @@ node tools/harness.mjs            # http://127.0.0.1:8787/popup.html?lang=ru
 ```bash
 cd tools/video && npm install
 node realcheck.mjs                # расширение в настоящем Chrome: манифест, языки, служебный процесс
-node shots.mjs                    # store/shot-ru-1..3.png
+node shots.mjs                    # store/: снимки для страницы (shot-ru-*), для магазина (screenshot-<язык>-*, 1280×800) и плитка
 DRY=1 node build.mjs              # прогон сцен ролика без голоса
 node build.mjs                    # ролик с озвучкой (нужен ELEVENLABS_API_KEY)
+node upload.mjs --check           # YouTube: токен жив? (ничего не пишет)
+node upload.mjs                   # ролик на YouTube по ссылке, id → out/web/video.json
 ```
 
 **Чего стенд не проверяет:** настоящих ответов портала. Форма запросов в
@@ -97,6 +99,8 @@ node build.mjs                    # ролик с озвучкой (нужен E
 
 Выпуск в магазин: поднять `version` в `manifest.json`, собрать архив, загрузить
 в [кабинет разработчика](https://chrome.google.com/webstore/devconsole).
+Тексты карточки на трёх языках — [store/listing.md](store/listing.md), там же
+перечислены снимки и плитка.
 
 Архив для страницы: `zip -r piopa-<версия>.zip manifest.json *.js *.html ui.css icons _locales`.
 

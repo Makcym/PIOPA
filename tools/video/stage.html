@@ -110,6 +110,9 @@
   const $ = (id) => document.getElementById(id);
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const LANG = new URLSearchParams(location.search).get('lang') || 'ru';
+  const NEW_TAB = { ru: 'Новая вкладка', en: 'New Tab', pl: 'Nowa karta' }[LANG] || 'New Tab';
+  document.documentElement.lang = LANG;
+  $('tabtitle').textContent = NEW_TAB;
   const frames = { popup: $('popupframe'), tab: $('tabframe') };
   let version = '';
   fetch('/manifest.json').then((r) => r.json()).then((m) => { version = m.version.split('.').slice(0, 2).join('.'); });
@@ -179,7 +182,7 @@
     async newTab() {
       $('tabframe').style.display = 'none';
       $('newtab').style.display = 'grid';
-      $('tabtitle').textContent = 'Новая вкладка';
+      $('tabtitle').textContent = NEW_TAB;
       $('tabicon').className = '';
       $('omni').textContent = '';
     },
