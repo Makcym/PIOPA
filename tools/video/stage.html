@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>PIOPA — video stage</title>
+<style>
+  /* 1280×720 CSS px; build.mjs records it at 1.5× → 1920×1080. The browser window,
+     its toolbar and the "new tab" are drawn here; the popup and the settings page
+     are the extension's real pages (tools/harness.mjs) in iframes. */
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1280px; height: 720px; overflow: hidden; }
+  body {
+    font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #eef1f5;
+    background:
+      radial-gradient(60% 80% at 8% 0%, rgba(232,69,124,.34), transparent 62%),
+      radial-gradient(50% 70% at 100% 10%, rgba(47,111,237,.26), transparent 62%),
+      radial-gradient(60% 80% at 70% 115%, rgba(245,158,11,.16), transparent 62%),
+      linear-gradient(180deg, #10131a, #0d0f15);
+  }
+  .layer { position: absolute; inset: 0; opacity: 0; transition: opacity .5s ease; pointer-events: none; }
+  .layer.on { opacity: 1; }
+
+  /* ---- title cards ---- */
+  #card { display: flex; flex-direction: column; justify-content: center; padding: 0 110px 60px; }
+  #card .brand { display: flex; align-items: center; gap: 18px; font-size: 24px; font-weight: 700; }
+  #card .brand img { width: 64px; height: 64px; background: #fff; border-radius: 16px; padding: 8px; box-shadow: 0 12px 34px rgba(232,69,124,.4); }
+  #card .ver { font: 600 13px ui-monospace, SFMono-Regular, Menlo, monospace; color: #ffc2d6; padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.16); }
+  #card h1 { font-size: 54px; line-height: 1.08; letter-spacing: -.03em; margin: 34px 0 18px; max-width: 980px; font-weight: 800; }
+  #card h1 em { font-style: normal; background: linear-gradient(90deg, #ff8fb4, #ffb86b); -webkit-background-clip: text; color: transparent; }
+  #card p { font-size: 23px; color: #aab3c0; margin: 0; max-width: 860px; line-height: 1.5; }
+  #card ul { list-style: none; padding: 0; margin: 34px 0 0; display: flex; flex-wrap: wrap; gap: 12px; }
+  #card li { padding: 10px 16px; border-radius: 12px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.14); font-size: 18px; font-weight: 600; }
+  #card .url { margin-top: 36px; font: 600 26px ui-monospace, SFMono-Regular, Menlo, monospace; color: #ffc2d6; }
+  #card .fine { margin-top: 18px; font-size: 16px; color: #7f8a99; }
+  #card > * { opacity: 0; transform: translateY(14px); transition: opacity .7s ease, transform .7s cubic-bezier(.2,.8,.2,1); }
+  #card.on > * { opacity: 1; transform: none; }
+  #card.on > :nth-child(2) { transition-delay: .15s; } #card.on > :nth-child(3) { transition-delay: .3s; }
+  #card.on > :nth-child(4) { transition-delay: .45s; } #card.on > :nth-child(5) { transition-delay: .6s; }
+
+  /* ---- the browser window ---- */
+  #browser .win {
+    position: absolute; left: 110px; top: 30px; width: 1060px; height: 600px;
+    background: #f1f3f5; border-radius: 14px; overflow: hidden; color: #1c2530;
+    box-shadow: 0 40px 100px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.08);
+  }
+  .tabs { height: 40px; background: #dee2e7; display: flex; align-items: flex-end; padding: 0 12px 0 78px; position: relative; }
+  .tabs::before { content: ""; position: absolute; left: 16px; top: 14px; width: 11px; height: 11px; border-radius: 50%; background: #ff5f57; box-shadow: 18px 0 0 #febc2e, 36px 0 0 #28c840; }
+  .tab { height: 32px; min-width: 220px; max-width: 300px; padding: 0 14px; background: #f1f3f5; border-radius: 9px 9px 0 0; display: flex; align-items: center; gap: 8px; font-size: 13px; }
+  .tab i { width: 14px; height: 14px; border-radius: 4px; background: #c5cbd3; flex: none; }
+  .tab i.ext { background: url(/icons/icon-48.png) center/contain no-repeat; }
+  .bar { height: 46px; display: flex; align-items: center; gap: 12px; padding: 0 14px; border-bottom: 1px solid #dfe3e8; }
+  .nav { display: flex; gap: 14px; color: #8b95a1; font-size: 18px; }
+  .omni { flex: 1; height: 30px; border-radius: 999px; background: #e3e7ec; display: flex; align-items: center; padding: 0 14px; font-size: 13.5px; color: #5d6875; }
+  .ext { position: relative; width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; transition: background .2s ease; }
+  .ext.hot { background: #dfe3e8; }
+  .ext img { width: 22px; height: 22px; }
+  #badge { position: absolute; right: -4px; bottom: -3px; min-width: 17px; height: 15px; padding: 0 4px; border-radius: 4px; background: #2196F3; color: #fff; font: 700 10.5px/15px -apple-system, "Segoe UI", sans-serif; text-align: center; transition: background .4s ease, transform .3s ease; display: none; }
+  #badge.pop { transform: scale(1.35); }
+  .dots { color: #8b95a1; font-size: 18px; letter-spacing: 1px; }
+  .page { position: absolute; left: 0; right: 0; top: 86px; bottom: 0; background: #fff; }
+  .newtab { position: absolute; inset: 0; display: grid; place-items: center; }
+  .newtab div { width: 470px; height: 44px; border-radius: 999px; background: #f1f3f5; border: 1px solid #e3e7ec; }
+  #tabframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: none; background: #fff; }
+  #popupframe { position: absolute; right: 14px; top: 90px; width: 420px; height: 0; border: 0; border-radius: 10px; background: #fff; box-shadow: 0 16px 50px rgba(15,25,40,.3), 0 0 0 1px rgba(15,25,40,.12); opacity: 0; transform: translateY(-8px); transition: opacity .25s ease, transform .25s ease; }
+  #popupframe.on { opacity: 1; transform: none; }
+  #worker { display: none; }
+
+  /* ---- spotlight, cursor, captions ---- */
+  #ring { position: absolute; border: 3px solid #e8457c; border-radius: 12px; box-shadow: 0 0 0 5px rgba(232,69,124,.22), 0 10px 30px rgba(232,69,124,.3); opacity: 0; transition: all .45s cubic-bezier(.2,.8,.2,1); pointer-events: none; z-index: 20; }
+  #ring.on { opacity: 1; }
+  #cursor { position: absolute; left: 900px; top: 420px; width: 22px; height: 22px; z-index: 30; transition: left .6s cubic-bezier(.3,.7,.2,1), top .6s cubic-bezier(.3,.7,.2,1); opacity: 0; pointer-events: none; }
+  #cursor.on { opacity: 1; }
+  #cursor.tap { transform: scale(.82); }
+  #caption { position: absolute; left: 0; right: 0; bottom: 16px; text-align: center; z-index: 40; opacity: 0; transition: opacity .25s ease; pointer-events: none; }
+  #caption.on { opacity: 1; }
+  #caption span { display: inline-block; max-width: 1040px; padding: 9px 18px; border-radius: 12px; background: rgba(8,10,14,.86); color: #fff; font-size: 19px; line-height: 1.38; font-weight: 500; }
+  #chapter { position: absolute; left: 34px; top: 14px; z-index: 40; font: 600 13px ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .08em; text-transform: uppercase; color: #ffc2d6; opacity: 0; transition: opacity .4s ease; }
+  #chapter.on { opacity: .9; }
+</style>
+</head>
+<body>
+  <div id="card" class="layer"></div>
+
+  <div id="browser" class="layer">
+    <div class="win">
+      <div class="tabs"><div class="tab"><i id="tabicon"></i><span id="tabtitle">Новая вкладка</span></div></div>
+      <div class="bar">
+        <div class="nav"><span>&larr;</span><span>&rarr;</span><span>&#x21bb;</span></div>
+        <div class="omni" id="omni"></div>
+        <div class="ext" id="ext"><img src="/icons/icon-48.png" alt=""><span id="badge"></span></div>
+        <div class="dots">&#8942;</div>
+      </div>
+      <div class="page">
+        <div class="newtab" id="newtab"><div></div></div>
+        <iframe id="tabframe"></iframe>
+      </div>
+      <iframe id="popupframe"></iframe>
+    </div>
+  </div>
+  <iframe id="worker"></iframe>
+
+  <div id="ring"></div>
+  <svg id="cursor" viewBox="0 0 24 24"><path d="M5 3l14 8.5-6.2 1.3-1.3 6.2z" fill="#111" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
+  <div id="chapter"></div>
+  <div id="caption"><span></span></div>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const LANG = new URLSearchParams(location.search).get('lang') || 'ru';
+  const frames = { popup: $('popupframe'), tab: $('tabframe') };
+  let version = '';
+  fetch('/manifest.json').then((r) => r.json()).then((m) => { version = m.version.split('.').slice(0, 2).join('.'); });
+
+  addEventListener('message', (e) => {
+    const b = e.data && e.data.pioBadge;
+    if (!b) return;
+    const el = $('badge');
+    const before = el.textContent + el.style.background;
+    el.textContent = b.text;
+    el.style.display = b.text ? 'block' : 'none';
+    el.style.background = b.color;
+    if (before !== b.text + b.color && b.text) { el.classList.add('pop'); setTimeout(() => el.classList.remove('pop'), 350); }
+  });
+
+  function loaded(frame, src) {
+    return new Promise((resolve) => {
+      frame.onload = () => resolve();
+      frame.src = src;
+    });
+  }
+  const q = (more) => `?lang=${LANG}&delay=350${more || ''}`;
+
+  /** Rect of an element inside one of the stage's iframes, in stage coordinates. */
+  function rectOf(where, selector, text) {
+    if (where === 'stage') return document.querySelector(selector).getBoundingClientRect();
+    const frame = frames[where];
+    const doc = frame.contentDocument;
+    let nodes = [...doc.querySelectorAll(selector)];
+    if (text) nodes = nodes.filter((n) => n.textContent.includes(text));
+    if (!nodes.length) throw new Error(`nothing matches ${where} ${selector} ${text || ''}`);
+    const el = nodes[0];
+    el.scrollIntoView({ block: 'nearest' });
+    const r = el.getBoundingClientRect();
+    const f = frame.getBoundingClientRect();
+    return { left: f.left + r.left, top: f.top + r.top, width: r.width, height: r.height, el };
+  }
+
+  const stage = {
+    sleep,
+    reset(state) {
+      sessionStorage.removeItem('pio-harness');
+      stage.empty = state === 'empty';
+    },
+    show(name) {
+      ['card', 'browser'].forEach((id) => $(id).classList.toggle('on', id === name));
+      if (name !== 'browser') { stage.ringOff(); $('cursor').classList.remove('on'); }
+    },
+    card(html) {
+      $('card').innerHTML = html
+        .replace('{brand}', `<div class="brand"><img src="/icons/icon-128.png" alt=""><span>PIO Application Checker</span><span class="ver">${version}</span></div>`);
+      stage.show('card');
+    },
+    caption(text) {
+      $('caption').querySelector('span').textContent = text || '';
+      $('caption').classList.toggle('on', Boolean(text));
+    },
+    chapter(text) {
+      $('chapter').textContent = text || '';
+      $('chapter').classList.toggle('on', Boolean(text));
+    },
+    /** The hidden service worker: runs one check, the badge follows. */
+    async check(extra) {
+      await loaded($('worker'), `/__worker.html${q((stage.empty ? '&state=empty' : '') + (extra ? `&extra=${extra}` : ''))}`);
+      await $('worker').contentWindow.checkOnce();
+    },
+    async newTab() {
+      $('tabframe').style.display = 'none';
+      $('newtab').style.display = 'grid';
+      $('tabtitle').textContent = 'Новая вкладка';
+      $('tabicon').className = '';
+      $('omni').textContent = '';
+    },
+    async openOptions() {
+      $('tabtitle').textContent = 'PIO Application Checker';
+      $('tabicon').className = 'ext';
+      $('omni').textContent = 'chrome-extension://…/options.html';
+      await loaded($('tabframe'), `/options.html${q(stage.empty ? '&state=empty' : '')}`);
+      $('newtab').style.display = 'none';
+      $('tabframe').style.display = 'block';
+      await sleep(250);
+    },
+    async openPopup(extra) {
+      const f = $('popupframe');
+      $('ext').classList.add('hot');
+      await loaded(f, `/popup.html${q((stage.empty ? '&state=empty' : '') + (extra ? `&extra=${extra}` : ''))}`);
+      f.classList.add('on');
+      // the real popup grows with its content, up to Chrome's limit
+      const fit = () => { f.style.height = `${Math.min(f.contentDocument.documentElement.scrollHeight, 498)}px`; };
+      fit();
+      const watch = new MutationObserver(fit);
+      watch.observe(f.contentDocument.body, { childList: true, subtree: true });
+      await sleep(1300);
+      fit();
+    },
+    closePopup() {
+      $('popupframe').classList.remove('on');
+      $('ext').classList.remove('hot');
+      $('popupframe').style.height = '0';
+      stage.ringOff();
+    },
+    ring(where, selector, text, pad = 6) {
+      const r = rectOf(where, selector, text);
+      const ring = $('ring');
+      ring.style.left = `${r.left - pad}px`;
+      ring.style.top = `${r.top - pad}px`;
+      ring.style.width = `${r.width + pad * 2}px`;
+      ring.style.height = `${r.height + pad * 2}px`;
+      ring.classList.add('on');
+    },
+    ringOff() { $('ring').classList.remove('on'); },
+    async moveTo(where, selector, text) {
+      const r = rectOf(where, selector, text);
+      const c = $('cursor');
+      c.classList.add('on');
+      c.style.left = `${r.left + r.width / 2 - 4}px`;
+      c.style.top = `${r.top + r.height / 2 - 3}px`;
+      await sleep(680);
+      return r;
+    },
+    async tap(where, selector, text) {
+      const r = await stage.moveTo(where, selector, text);
+      $('cursor').classList.add('tap');
+      await sleep(120);
+      $('cursor').classList.remove('tap');
+      if (r.el) r.el.click();
+      await sleep(200);
+    },
+    async type(where, selector, value) {
+      const r = await stage.moveTo(where, selector);
+      r.el.focus();
+      r.el.value = '';
+      for (const ch of value) {
+        r.el.value += ch;
+        r.el.dispatchEvent(new Event('input', { bubbles: true }));
+        await sleep(38);
+      }
+    },
+    select(where, selector, value) {
+      const r = rectOf(where, selector);
+      r.el.value = value;
+      r.el.dispatchEvent(new Event('change', { bubbles: true }));
+    },
+    hideCursor() { $('cursor').classList.remove('on'); },
+  };
+  window.stage = stage;
+})();
+</script>
+</body>
+</html>

@@ -1,163 +1,98 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>PIO Application Checker - Settings</title>
+  <meta charset="utf-8">
+  <title>PIO Application Checker</title>
+  <link rel="stylesheet" href="ui.css">
   <style>
-    body {
-      width: 600px;
-      margin: 20px auto;
-      padding: 20px;
-      font-family: Arial, sans-serif;
+    body { max-width: 620px; margin: 0 auto; padding: 28px 20px 40px; }
+    h1 { font-size: 20px; margin: 0 0 4px; display: flex; align-items: center; gap: 10px; }
+    h1 img { width: 28px; height: 28px; }
+    .lead { color: var(--mute); margin: 0 0 22px; }
+    .group { margin-bottom: 16px; }
+    label { display: block; font-weight: 600; margin-bottom: 6px; }
+    .hint { font-size: 12.5px; color: var(--mute); margin-top: 5px; }
+    input[type="text"], input[type="password"], select {
+      width: 100%; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px;
+      background: var(--bg); color: var(--ink); font: inherit;
     }
-    .form-group {
-      margin-bottom: 15px;
-    }
-    label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: bold;
-    }
-    input[type="text"],
-    input[type="password"] {
-      width: 100%;
-      padding: 8px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      box-sizing: border-box;
-    }
-    .button-group {
-      display: flex;
-      gap: 10px;
-      margin-top: 20px;
-    }
-    button {
-      border: none;
-      padding: 10px 20px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: all 0.3s ease;
-    }
-    #save {
-      background: #4CAF50;
-      color: white;
-    }
-    #save:hover {
-      background: #45a049;
-    }
-    #testConnection {
-      background: #2196F3;
-      color: white;
-      padding: 8px 15px;
-    }
-    #testConnection:hover {
-      background: #1976D2;
-    }
-    .success-message {
-      color: #4CAF50;
-      margin-top: 10px;
-      display: none;
-    }
-    .error-message {
-      color: #f44336;
-      margin-top: 10px;
-      display: none;
-    }
-    .applications-list {
-      margin-top: 20px;
-      display: none;
-    }
-    .applications-list h3 {
-      margin-bottom: 10px;
-    }
-    .application-item {
-      padding: 10px;
-      margin: 5px 0;
-      background-color: #f8f9fa;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .application-item:hover {
-      background-color: #e9ecef;
-      transform: translateY(-2px);
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    .application-number {
-      font-weight: bold;
-      color: #2c3e50;
-    }
-    .application-date {
-      color: #7f8c8d;
-      font-size: 0.9em;
-    }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .apps { margin-top: 12px; display: none; }
+    .apps h2 { font-size: 14px; margin: 0 0 8px; }
+    .app { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 11px; margin-bottom: 6px; background: var(--panel); border-radius: 8px; }
+    .app-number { font-weight: 700; }
+    .app-date { color: var(--mute); font-size: 12.5px; margin-left: 8px; }
+    .foot { display: flex; align-items: center; gap: 14px; margin-top: 26px; }
+    .ok { color: var(--ok-ink); display: none; }
+    .err { color: var(--bad-ink); background: var(--bad-bg); padding: 8px 10px; border-radius: 8px; margin-top: 10px; display: none; }
+    .privacy { margin-top: 26px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; font-size: 12.5px; color: var(--mute); }
+    @media (max-width: 480px) { .row { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
-  <h2>PIO Application Checker Settings</h2>
-  
-  <div class="form-group">
-    <label for="username">Email:</label>
-    <input type="text" id="username" placeholder="Enter your email">
+  <h1><img src="icons/icon-48.png" alt=""><span data-i18n="optionsTitle">Settings</span></h1>
+  <p class="lead" data-i18n="optionsLead"></p>
+
+  <div class="group">
+    <label for="username" data-i18n="email">Email</label>
+    <input type="text" id="username" autocomplete="username" data-i18n-placeholder="emailPlaceholder">
   </div>
-  
-  <div class="form-group">
-    <label for="password">Password:</label>
-    <input type="password" id="password" placeholder="Enter your password">
+  <div class="group">
+    <label for="password" data-i18n="password">Password</label>
+    <input type="password" id="password" autocomplete="current-password" data-i18n-placeholder="passwordPlaceholder">
   </div>
-  
-  <div class="form-group">
-    <label for="applications">Application Numbers:</label>
-    <input type="text" id="applications" placeholder="Enter application numbers separated by commas">
+  <div class="group">
+    <label for="applications" data-i18n="applications">Application numbers</label>
+    <input type="text" id="applications" data-i18n-placeholder="applicationsPlaceholder">
+    <div class="hint" data-i18n="applicationsHint"></div>
   </div>
 
-  <div>
-    <button id="testConnection">Get Applications</button>
-  </div>
-  
-  <div id="applicationsList" class="applications-list">
-    <h3>Available Applications:</h3>
+  <button id="testConnection" class="btn blue" data-i18n="getApplications">Get applications</button>
+  <div id="errorMessage" class="err"></div>
+  <div id="applicationsList" class="apps">
+    <h2 data-i18n="availableApplications">Available applications</h2>
     <div id="applicationsListContent"></div>
   </div>
 
-  <div class="form-group" style="margin-top: 24px;">
-    <label for="newsPeriod">Show news for period:</label>
-    <select id="newsPeriod">
-      <option value="all">All time</option>
-      <option value="5y">5 years</option>
-      <option value="4y">4 years</option>
-      <option value="3y" selected>3 years</option>
-      <option value="2y">2 years</option>
-      <option value="1y">1 year</option>
-      <option value="6m">6 months</option>
-      <option value="1m">1 month</option>
-      <option value="1w">1 week</option>
-      <option value="3d">3 days</option>
-      <option value="1d">1 day</option>
-      <option value="5h">5 hours</option>
-    </select>
+  <div class="row" style="margin-top: 24px;">
+    <div class="group">
+      <label for="newsPeriod" data-i18n="newsPeriod">Show messages for</label>
+      <select id="newsPeriod">
+        <option value="all" data-i18n="period_all">All time</option>
+        <option value="5y" data-i18n="period_5y">5 years</option>
+        <option value="4y" data-i18n="period_4y">4 years</option>
+        <option value="3y" data-i18n="period_3y" selected>3 years</option>
+        <option value="2y" data-i18n="period_2y">2 years</option>
+        <option value="1y" data-i18n="period_1y">1 year</option>
+        <option value="6m" data-i18n="period_6m">6 months</option>
+        <option value="1m" data-i18n="period_1m">1 month</option>
+        <option value="1w" data-i18n="period_1w">1 week</option>
+        <option value="3d" data-i18n="period_3d">3 days</option>
+        <option value="1d" data-i18n="period_1d">1 day</option>
+        <option value="5h" data-i18n="period_5h">5 hours</option>
+      </select>
+    </div>
+    <div class="group">
+      <label for="autoUpdatePeriod" data-i18n="autoUpdate">Check every</label>
+      <select id="autoUpdatePeriod">
+        <option value="0.5" data-i18n="every_30m">30 minutes</option>
+        <option value="1" data-i18n="every_1h">1 hour</option>
+        <option value="2" data-i18n="every_2h">2 hours</option>
+        <option value="3" data-i18n="every_3h" selected>3 hours</option>
+        <option value="5" data-i18n="every_5h">5 hours</option>
+        <option value="10" data-i18n="every_10h">10 hours</option>
+      </select>
+    </div>
   </div>
 
-  <div class="form-group" style="margin-top: 24px;">
-    <label for="autoUpdatePeriod">Auto update period:</label>
-    <select id="autoUpdatePeriod">
-      <option value="0.5">30 min</option>
-      <option value="1">1 hour</option>
-      <option value="2">2 hours</option>
-      <option value="3" selected>3 hours</option>
-      <option value="5">5 hours</option>
-      <option value="10">10 hours</option>
-    </select>
+  <div class="foot">
+    <button id="save" class="btn primary" data-i18n="save">Save</button>
+    <span id="successMessage" class="ok" data-i18n="saved">Saved</span>
   </div>
 
-  <div class="button-group" style="margin-top: 32px;">
-      <button id="save">Save Settings</button>
-  </div>
-  <div id="successMessage" class="success-message">Settings saved successfully!</div>
-  <div id="errorMessage" class="error-message"></div>
+  <div class="privacy" data-i18n="privacyNote"></div>
+
+  <script src="core.js"></script>
   <script src="options.js"></script>
 </body>
-</html> 
+</html>

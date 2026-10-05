@@ -1,0 +1,176 @@
+{
+  "extDescription": {
+    "message": "Śledzi wniosek o kartę pobytu w portalu Przybysz (pio-przybysz.duw.pl): etap, dni w toku i komunikaty urzędu."
+  },
+  "refresh": {
+    "message": "Odśwież"
+  },
+  "settings": {
+    "message": "Ustawienia"
+  },
+  "openSettings": {
+    "message": "Otwórz ustawienia"
+  },
+  "setupNeeded": {
+    "message": "Najpierw podaj e-mail i hasło do portalu oraz numer wniosku."
+  },
+  "loading": {
+    "message": "Sprawdzam portal…"
+  },
+  "refreshing": {
+    "message": "odświeżam…"
+  },
+  "foundInPeriod": {
+    "message": "Komunikaty w okresie: $1"
+  },
+  "updatedAt": {
+    "message": "sprawdzono $1"
+  },
+  "applicationN": {
+    "message": "Wniosek $1"
+  },
+  "inspector": {
+    "message": "Inspektor: $1"
+  },
+  "noNews": {
+    "message": "Brak komunikatów w tym okresie."
+  },
+  "notInPortal": {
+    "message": "Brak wśród wniosków w toku w portalu."
+  },
+  "fresh": {
+    "message": "nowe"
+  },
+  "days_one": {
+    "message": "$1 dzień"
+  },
+  "days_few": {
+    "message": "$1 dni"
+  },
+  "days_many": {
+    "message": "$1 dni"
+  },
+  "days_other": {
+    "message": "$1 dni"
+  },
+  "errorAuth": {
+    "message": "Portal nie przyjął e-maila lub hasła. Sprawdź je w ustawieniach."
+  },
+  "errorNetwork": {
+    "message": "Nie udało się połączyć z portalem. Kolejne sprawdzenie spróbuje ponownie."
+  },
+  "errorFormat": {
+    "message": "Portal odpowiedział w nieoczekiwanej formie. Być może się zmienił i rozszerzenie wymaga aktualizacji."
+  },
+  "optionsTitle": {
+    "message": "Ustawienia"
+  },
+  "optionsLead": {
+    "message": "Ten sam e-mail i hasło, których używasz na pio-przybysz.duw.pl."
+  },
+  "email": {
+    "message": "E-mail"
+  },
+  "emailPlaceholder": {
+    "message": "login do portalu"
+  },
+  "password": {
+    "message": "Hasło"
+  },
+  "passwordPlaceholder": {
+    "message": "hasło do portalu"
+  },
+  "applications": {
+    "message": "Numery wniosków"
+  },
+  "applicationsPlaceholder": {
+    "message": "po przecinku"
+  },
+  "applicationsHint": {
+    "message": "Wpisz ręcznie albo naciśnij przycisk poniżej i dodaj z listy."
+  },
+  "getApplications": {
+    "message": "Pobierz wnioski"
+  },
+  "availableApplications": {
+    "message": "Twoje wnioski w portalu"
+  },
+  "noApplications": {
+    "message": "Portal nie pokazuje wniosków dla tego konta."
+  },
+  "add": {
+    "message": "Dodaj"
+  },
+  "enterCredentials": {
+    "message": "Najpierw podaj e-mail i hasło."
+  },
+  "newsPeriod": {
+    "message": "Pokazuj komunikaty z"
+  },
+  "autoUpdate": {
+    "message": "Sprawdzaj co"
+  },
+  "period_all": {
+    "message": "cały okres"
+  },
+  "period_5y": {
+    "message": "5 lat"
+  },
+  "period_4y": {
+    "message": "4 lata"
+  },
+  "period_3y": {
+    "message": "3 lata"
+  },
+  "period_2y": {
+    "message": "2 lata"
+  },
+  "period_1y": {
+    "message": "1 rok"
+  },
+  "period_6m": {
+    "message": "6 miesięcy"
+  },
+  "period_1m": {
+    "message": "1 miesiąc"
+  },
+  "period_1w": {
+    "message": "1 tydzień"
+  },
+  "period_3d": {
+    "message": "3 dni"
+  },
+  "period_1d": {
+    "message": "1 dzień"
+  },
+  "period_5h": {
+    "message": "5 godzin"
+  },
+  "every_30m": {
+    "message": "30 minut"
+  },
+  "every_1h": {
+    "message": "1 godzinę"
+  },
+  "every_2h": {
+    "message": "2 godziny"
+  },
+  "every_3h": {
+    "message": "3 godziny"
+  },
+  "every_5h": {
+    "message": "5 godzin"
+  },
+  "every_10h": {
+    "message": "10 godzin"
+  },
+  "save": {
+    "message": "Zapisz"
+  },
+  "saved": {
+    "message": "Zapisano"
+  },
+  "privacyNote": {
+    "message": "Hasło jest przechowywane tylko w tej przeglądarce i trafia w jedno miejsce — na serwer samego portalu, api-przybysz.duw.pl. Bez analityki i zewnętrznych serwerów."
+  }
+}

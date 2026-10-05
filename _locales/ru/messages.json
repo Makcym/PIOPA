@@ -1,0 +1,176 @@
+{
+  "extDescription": {
+    "message": "Следит за заявлением на карту побыту в портале Przybysz (pio-przybysz.duw.pl): этап, дни в работе и сообщения инспектора."
+  },
+  "refresh": {
+    "message": "Обновить"
+  },
+  "settings": {
+    "message": "Настройки"
+  },
+  "openSettings": {
+    "message": "Открыть настройки"
+  },
+  "setupNeeded": {
+    "message": "Сначала укажите почту и пароль от портала и номер заявления."
+  },
+  "loading": {
+    "message": "Проверяю портал…"
+  },
+  "refreshing": {
+    "message": "обновляю…"
+  },
+  "foundInPeriod": {
+    "message": "Сообщений за период: $1"
+  },
+  "updatedAt": {
+    "message": "проверено $1"
+  },
+  "applicationN": {
+    "message": "Заявление $1"
+  },
+  "inspector": {
+    "message": "Инспектор: $1"
+  },
+  "noNews": {
+    "message": "За этот период сообщений нет."
+  },
+  "notInPortal": {
+    "message": "Нет среди заявлений в работе на портале."
+  },
+  "fresh": {
+    "message": "новое"
+  },
+  "days_one": {
+    "message": "$1 день"
+  },
+  "days_few": {
+    "message": "$1 дня"
+  },
+  "days_many": {
+    "message": "$1 дней"
+  },
+  "days_other": {
+    "message": "$1 дня"
+  },
+  "errorAuth": {
+    "message": "Портал не принял почту или пароль. Проверьте их в настройках."
+  },
+  "errorNetwork": {
+    "message": "Не удалось связаться с порталом. Следующая проверка повторит попытку."
+  },
+  "errorFormat": {
+    "message": "Портал ответил в неожиданном виде. Возможно, он изменился и расширению нужно обновление."
+  },
+  "optionsTitle": {
+    "message": "Настройки"
+  },
+  "optionsLead": {
+    "message": "Те же почта и пароль, с которыми вы входите на pio-przybysz.duw.pl."
+  },
+  "email": {
+    "message": "Почта"
+  },
+  "emailPlaceholder": {
+    "message": "логин на портале"
+  },
+  "password": {
+    "message": "Пароль"
+  },
+  "passwordPlaceholder": {
+    "message": "пароль от портала"
+  },
+  "applications": {
+    "message": "Номера заявлений"
+  },
+  "applicationsPlaceholder": {
+    "message": "через запятую"
+  },
+  "applicationsHint": {
+    "message": "Впишите вручную или нажмите кнопку ниже и добавьте из списка."
+  },
+  "getApplications": {
+    "message": "Получить заявления"
+  },
+  "availableApplications": {
+    "message": "Ваши заявления на портале"
+  },
+  "noApplications": {
+    "message": "Для этого аккаунта портал не показывает заявлений."
+  },
+  "add": {
+    "message": "Добавить"
+  },
+  "enterCredentials": {
+    "message": "Сначала введите почту и пароль."
+  },
+  "newsPeriod": {
+    "message": "Показывать сообщения за"
+  },
+  "autoUpdate": {
+    "message": "Проверять каждые"
+  },
+  "period_all": {
+    "message": "всё время"
+  },
+  "period_5y": {
+    "message": "5 лет"
+  },
+  "period_4y": {
+    "message": "4 года"
+  },
+  "period_3y": {
+    "message": "3 года"
+  },
+  "period_2y": {
+    "message": "2 года"
+  },
+  "period_1y": {
+    "message": "1 год"
+  },
+  "period_6m": {
+    "message": "6 месяцев"
+  },
+  "period_1m": {
+    "message": "1 месяц"
+  },
+  "period_1w": {
+    "message": "1 неделю"
+  },
+  "period_3d": {
+    "message": "3 дня"
+  },
+  "period_1d": {
+    "message": "1 день"
+  },
+  "period_5h": {
+    "message": "5 часов"
+  },
+  "every_30m": {
+    "message": "30 минут"
+  },
+  "every_1h": {
+    "message": "1 час"
+  },
+  "every_2h": {
+    "message": "2 часа"
+  },
+  "every_3h": {
+    "message": "3 часа"
+  },
+  "every_5h": {
+    "message": "5 часов"
+  },
+  "every_10h": {
+    "message": "10 часов"
+  },
+  "save": {
+    "message": "Сохранить"
+  },
+  "saved": {
+    "message": "Сохранено"
+  },
+  "privacyNote": {
+    "message": "Пароль хранится только в этом браузере и уходит в одно место — на сервер самого портала, api-przybysz.duw.pl. Без аналитики и сторонних серверов."
+  }
+}

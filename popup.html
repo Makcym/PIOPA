@@ -1,115 +1,49 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8">
   <title>PIO Application Checker</title>
+  <link rel="stylesheet" href="ui.css">
   <style>
-    body {
-      width: 400px;
-      padding: 15px;
-      font-family: Arial, sans-serif;
-    }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 15px;
-    }
-    .header-buttons {
-      display: flex;
-      gap: 10px;
-    }
-    .settings-button, .refresh-button {
-      background: #4CAF50;
-      color: white;
-      border: none;
-      padding: 8px 15px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: background-color 0.3s;
-    }
-    .refresh-button {
-      background: #2196F3;
-    }
-    .settings-button:hover {
-      background: #45a049;
-    }
-    .refresh-button:hover {
-      background: #1976D2;
-    }
-    #status {
-      margin-bottom: 10px;
-      padding: 8px;
-      border-radius: 4px;
-    }
-    .success {
-      background-color: #dff0d8;
-      color: #3c763d;
-    }
-    .error {
-      background-color: #f2dede;
-      color: #a94442;
-    }
-    .news-list {
-      max-height: 400px;
-      overflow-y: auto;
-    }
-    .news-item {
-      padding: 10px;
-      margin-bottom: 8px;
-      background-color: #f8f9fa;
-      border-radius: 4px;
-      transition: all 0.3s ease;
-    }
-    .news-item:hover {
-      background-color: #e9ecef;
-      transform: translateY(-2px);
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    .news-title {
-      display: block;
-      font-weight: bold;
-      color: #2c3e50;
-      text-decoration: none;
-      margin-bottom: 5px;
-    }
-    .news-title:hover {
-      color: #3498db;
-    }
-    .news-date {
-      font-size: 12px;
-      color: #7f8c8d;
-    }
-    .loading {
-      text-align: center;
-      color: #666;
-      padding: 20px;
-    }
-    .no-news {
-      text-align: center;
-      color: #666;
-      padding: 20px;
-    }
-    .settings-required {
-      text-align: center;
-      color: #666;
-      padding: 20px;
-      background-color: #f8f9fa;
-      border-radius: 4px;
-      line-height: 1.5;
-    }
+    body { width: 420px; padding: 14px; }
+    .top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+    .brand { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 15px; min-width: 0; }
+    .brand img { width: 24px; height: 24px; flex: none; }
+    .brand span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .actions { display: flex; gap: 8px; flex: none; }
+    .btn.icon { width: 34px; padding: 6px 0; font-size: 16px; line-height: 1; }
+    .status { font-size: 12.5px; color: var(--mute); margin-bottom: 10px; min-height: 18px; }
+    .status.error { color: var(--bad-ink); background: var(--bad-bg); padding: 8px 10px; border-radius: 8px; }
+    .list { max-height: 390px; overflow-y: auto; }
+    .case { border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+    .case-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+    .case-number { font-weight: 700; }
+    .case-days { font-size: 12.5px; color: var(--mute); white-space: nowrap; }
+    .case-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 6px; font-size: 12.5px; color: var(--mute); }
+    .chip { display: inline-block; padding: 3px 9px; border-radius: 999px; background: var(--panel); border: 1px solid var(--line); color: var(--ink); font-weight: 600; font-size: 12px; }
+    .news { margin-top: 10px; display: grid; gap: 6px; }
+    .news-item { background: var(--panel); border-radius: 8px; padding: 8px 10px; }
+    .news-item.decision { background: var(--ok-bg); color: var(--ok-ink); }
+    .news-title { font-weight: 600; }
+    .news-date { font-size: 12px; color: var(--mute); margin-top: 2px; }
+    .news-item.decision .news-date { color: inherit; opacity: .8; }
+    .fresh { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 999px; background: var(--new); color: #1c1400; font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; vertical-align: 1px; }
+    .empty { text-align: center; color: var(--mute); padding: 22px 12px; background: var(--panel); border-radius: 12px; line-height: 1.55; }
+    .empty .btn { margin-top: 12px; }
+    .none { font-size: 12.5px; color: var(--mute); margin-top: 8px; }
   </style>
 </head>
 <body>
-  <div class="header">
-    <h2>PIO Application Checker</h2>
-    <div class="header-buttons">
-      <button id="refreshButton" class="refresh-button">Refresh</button>
-      <button id="settingsButton" class="settings-button">Settings</button>
+  <div class="top">
+    <div class="brand"><img src="icons/icon-48.png" alt=""><span>PIO Application Checker</span></div>
+    <div class="actions">
+      <button id="refreshButton" class="btn blue icon" data-i18n-title="refresh" aria-label="Refresh">&#x21bb;</button>
+      <button id="settingsButton" class="btn" data-i18n="settings">Settings</button>
     </div>
   </div>
-  <div id="status"></div>
-  <div id="newsList" class="news-list"></div>
+  <div id="status" class="status"></div>
+  <div id="newsList" class="list"></div>
+  <script src="core.js"></script>
   <script src="popup.js"></script>
 </body>
-</html> 
+</html>
