@@ -1,1 +1,8 @@
 .idea
+# packed builds and the signing key — the key must never reach this public repo
+*.pem
+*.crx
+*.zip
+node_modules/
+tools/video/out/
+.DS_Store

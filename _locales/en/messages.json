@@ -1,0 +1,176 @@
+{
+  "extDescription": {
+    "message": "Follows your residence-permit application in the Przybysz portal: stage, days in progress and the office's messages."
+  },
+  "refresh": {
+    "message": "Refresh"
+  },
+  "settings": {
+    "message": "Settings"
+  },
+  "openSettings": {
+    "message": "Open settings"
+  },
+  "setupNeeded": {
+    "message": "Enter your portal email, password and application number first."
+  },
+  "loading": {
+    "message": "Checking the portal…"
+  },
+  "refreshing": {
+    "message": "updating…"
+  },
+  "foundInPeriod": {
+    "message": "Messages in the period: $1"
+  },
+  "updatedAt": {
+    "message": "checked $1"
+  },
+  "applicationN": {
+    "message": "Application $1"
+  },
+  "inspector": {
+    "message": "Inspector: $1"
+  },
+  "noNews": {
+    "message": "No messages in this period."
+  },
+  "notInPortal": {
+    "message": "Not among the applications in progress in the portal."
+  },
+  "fresh": {
+    "message": "new"
+  },
+  "days_one": {
+    "message": "$1 day"
+  },
+  "days_few": {
+    "message": "$1 days"
+  },
+  "days_many": {
+    "message": "$1 days"
+  },
+  "days_other": {
+    "message": "$1 days"
+  },
+  "errorAuth": {
+    "message": "The portal did not accept the email or password. Check them in the settings."
+  },
+  "errorNetwork": {
+    "message": "Could not reach the portal. The next check will try again."
+  },
+  "errorFormat": {
+    "message": "The portal answered in an unexpected form. It may have changed; the extension needs an update."
+  },
+  "optionsTitle": {
+    "message": "Settings"
+  },
+  "optionsLead": {
+    "message": "The same email and password you use at pio-przybysz.duw.pl."
+  },
+  "email": {
+    "message": "Email"
+  },
+  "emailPlaceholder": {
+    "message": "your portal login"
+  },
+  "password": {
+    "message": "Password"
+  },
+  "passwordPlaceholder": {
+    "message": "your portal password"
+  },
+  "applications": {
+    "message": "Application numbers"
+  },
+  "applicationsPlaceholder": {
+    "message": "comma-separated"
+  },
+  "applicationsHint": {
+    "message": "Type them in, or press the button below and add from the list."
+  },
+  "getApplications": {
+    "message": "Get applications"
+  },
+  "availableApplications": {
+    "message": "Your applications in the portal"
+  },
+  "noApplications": {
+    "message": "The portal lists no applications for this account."
+  },
+  "add": {
+    "message": "Add"
+  },
+  "enterCredentials": {
+    "message": "Enter the email and password first."
+  },
+  "newsPeriod": {
+    "message": "Show messages for"
+  },
+  "autoUpdate": {
+    "message": "Check every"
+  },
+  "period_all": {
+    "message": "all time"
+  },
+  "period_5y": {
+    "message": "5 years"
+  },
+  "period_4y": {
+    "message": "4 years"
+  },
+  "period_3y": {
+    "message": "3 years"
+  },
+  "period_2y": {
+    "message": "2 years"
+  },
+  "period_1y": {
+    "message": "1 year"
+  },
+  "period_6m": {
+    "message": "6 months"
+  },
+  "period_1m": {
+    "message": "1 month"
+  },
+  "period_1w": {
+    "message": "1 week"
+  },
+  "period_3d": {
+    "message": "3 days"
+  },
+  "period_1d": {
+    "message": "1 day"
+  },
+  "period_5h": {
+    "message": "5 hours"
+  },
+  "every_30m": {
+    "message": "30 minutes"
+  },
+  "every_1h": {
+    "message": "1 hour"
+  },
+  "every_2h": {
+    "message": "2 hours"
+  },
+  "every_3h": {
+    "message": "3 hours"
+  },
+  "every_5h": {
+    "message": "5 hours"
+  },
+  "every_10h": {
+    "message": "10 hours"
+  },
+  "save": {
+    "message": "Save"
+  },
+  "saved": {
+    "message": "Saved"
+  },
+  "privacyNote": {
+    "message": "The password is kept in this browser only and is sent to one place — the portal's own server, api-przybysz.duw.pl. No analytics, no third-party servers."
+  }
+}
