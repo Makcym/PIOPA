@@ -40,7 +40,6 @@ function key(name) {
   const files = [
     path.join(HERE, '.env'),
     path.join(os.homedir(), 'dev/max/MARKAROV-DEV/demo/sla/tools/video/.env'),
-    path.join(os.homedir(), 'dev/max/MAXIM-MARKAROV-CC/demo/sla/tools/video/.env'),
   ];
   for (const file of files) {
     if (!fs.existsSync(file)) continue;
